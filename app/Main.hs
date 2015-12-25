@@ -14,6 +14,7 @@ main = do
     let (game, idGen2) = buildGame idGen $ do
             addPlayer "Jaina"
             addPlayer "Thrall"
+            setMaxHealth 1 20
     putStrLn (show game)
     let (oasis, idGen3) = lookupMinion idGen2 "Oasis Snapjaw"
     putStrLn (show oasis)
