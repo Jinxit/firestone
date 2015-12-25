@@ -79,4 +79,4 @@ setDeck i names = do
 build :: State GameBuilder (Game, IdGenerator)
 build = do
     gb <- get
-    return $ (Game (gb^.gbPlayers) 0, gb^.gbIdGen)
+    return $ (makeGame (gb^.gbPlayers) 0, gb^.gbIdGen)
