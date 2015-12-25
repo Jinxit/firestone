@@ -48,5 +48,5 @@ setStartingMana i mana = do
 
 build :: State GameBuilder (Game, IdGenerator)
 build = do
-    GameBuilder players idGen <- get
-    return $ (Game players 0, idGen)
+    gb <- get
+    return $ (Game (gb^.gbPlayers) 0, gb^.gbIdGen)
