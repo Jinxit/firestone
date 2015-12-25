@@ -20,13 +20,13 @@ data Player = Player { _playerId :: String
 makeLenses ''Player
 
 instance Eq Player where
-    (==) a b = a^.playerId  == b^.playerId 
+    (==) a b = a^.playerId  == b^.playerId
 
 instance Ord Player where
-    (<)  a b = a^.playerId  <  b^.playerId 
-    (<=) a b = a^.playerId  <= b^.playerId 
-    (>)  a b = a^.playerId  >  b^.playerId 
-    (>=) a b = a^.playerId  >= b^.playerId 
+    (<)  a b = a^.playerId  <  b^.playerId
+    (<=) a b = a^.playerId  <= b^.playerId
+    (>)  a b = a^.playerId  >  b^.playerId
+    (>=) a b = a^.playerId  >= b^.playerId
 
 makePlayer :: String -> Hero -> Player
 makePlayer pId pHero = Player pId pHero [] [] (Deck [])
