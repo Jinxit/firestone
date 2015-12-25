@@ -15,7 +15,17 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib Firestone.Card Firestone.Deck Firestone.GameBuilder Firestone.Hero Firestone.Minion Firestone.Player Firestone.Database Firestone.IdGenerator
+  exposed-modules:     Lib
+                     , Firestone.Card
+                     , Firestone.Deck
+                     , Firestone.GameBuilder
+                     , Firestone.Hero
+                     , Firestone.Minion
+                     , Firestone.Player
+                     , Firestone.Database
+                     , Firestone.IdGenerator
+                     , Firestone.Game
+                     , Firestone.Event
   build-depends:       base >= 4.7 && < 5
                      , mtl
   default-language:    Haskell2010

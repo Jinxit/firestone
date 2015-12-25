@@ -10,10 +10,10 @@ import Control.Monad.State
 
 main :: IO ()
 main = do
-    let players = buildGame $ do
-            addPlayer
-            addPlayer
-    putStrLn (show players)
-    let gen = makeIdGenerator
-    let (oasis, gen2) = lookupMinion gen "Oasis Snapjaw"
+    let idGen = makeIdGenerator
+    let (game, idGen2) = buildGame idGen $ do
+            addPlayer "Jaina"
+            addPlayer "Thrall"
+    putStrLn (show game)
+    let (oasis, idGen3) = lookupMinion idGen2 "Oasis Snapjaw"
     putStrLn (show oasis)
