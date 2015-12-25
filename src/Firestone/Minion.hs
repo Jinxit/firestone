@@ -36,3 +36,8 @@ instance Ord Minion where
     (<=) a b = minionId a <= minionId b
     (>)  a b = minionId a >  minionId b
     (>=) a b = minionId a >= minionId b
+
+makeMinion :: String -> String -> Int -> Int -> MinionRace -> [MinionState] -> Bool -> Minion
+makeMinion mId mName mAttack mHealth mRace mStates mIsSleepy = minion
+  where
+    minion = Minion mId mName mAttack mAttack mHealth mHealth mHealth mRace mStates mIsSleepy
