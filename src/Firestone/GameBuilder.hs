@@ -32,16 +32,19 @@ addPlayer heroName = do
     gbIdGen .= idGen3
     build
 
+heroAt :: Int -> Traversal' GameBuilder Hero
+heroAt i = gbPlayers.traversed.index (i - 1).playerHero
+
 setMaxHealth :: Int -> Int -> State GameBuilder (Game, IdGenerator)
 setMaxHealth i health = do
-    zoom (gbPlayers.traversed.index (i - 1).playerHero) $ do
+    zoom (heroAt i) $ do
         heroHealth .= health
         heroMaxHealth .= health
     build
 
 setStartingMana :: Int -> Int -> State GameBuilder (Game, IdGenerator)
 setStartingMana i mana = do
-    zoom (gbPlayers.traversed.index (i - 1).playerHero) $ do
+    zoom (heroAt i) $ do
         heroMana .= mana
         heroMaxMana .= mana
     build
