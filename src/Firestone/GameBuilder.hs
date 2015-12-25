@@ -39,6 +39,13 @@ setMaxHealth i health = do
         heroMaxHealth .= health
     build
 
+setStartingMana :: Int -> Int -> State GameBuilder (Game, IdGenerator)
+setStartingMana i mana = do
+    zoom (gbPlayers.traversed.index (i - 1).playerHero) $ do
+        heroMana .= mana
+        heroMaxMana .= mana
+    build
+
 build :: State GameBuilder (Game, IdGenerator)
 build = do
     GameBuilder players idGen <- get
