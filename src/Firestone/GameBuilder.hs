@@ -14,12 +14,15 @@ import Control.Lens
 
 data GameBuilder = GameBuilder { _gbPlayers :: [Player]
                                , _gbIdGen :: IdGenerator
-                               } deriving (Show)
+                               , _gbLookupMinions :: (IdGenerator -> [String] -> ([Minion], IdGenerator))
+                               }
 
 makeLenses ''GameBuilder
 
-buildGame :: IdGenerator -> State GameBuilder (Game, IdGenerator) -> (Game, IdGenerator)
-buildGame idGen buildActions = evalState buildActions (GameBuilder [] idGen)
+buildGame :: IdGenerator -> (IdGenerator -> [String] -> ([Minion], IdGenerator))
+          -> State GameBuilder (Game, IdGenerator) -> (Game, IdGenerator)
+buildGame idGen lookupMinions buildActions =
+    evalState buildActions (GameBuilder [] idGen lookupMinions)
 
 addPlayer :: String -> State GameBuilder (Game, IdGenerator)
 addPlayer heroName = do
@@ -32,8 +35,11 @@ addPlayer heroName = do
     gbIdGen .= idGen3
     build
 
+playerAt :: Int -> Traversal' GameBuilder Player
+playerAt i = gbPlayers.traversed.index (i - 1)
+
 heroAt :: Int -> Traversal' GameBuilder Hero
-heroAt i = gbPlayers.traversed.index (i - 1).playerHero
+heroAt i = playerAt i.playerHero
 
 setMaxHealth :: Int -> Int -> State GameBuilder (Game, IdGenerator)
 setMaxHealth i health = do
@@ -47,6 +53,14 @@ setStartingMana i mana = do
     zoom (heroAt i) $ do
         heroMana .= mana
         heroMaxMana .= mana
+    build
+
+setActiveMinions :: Int -> [String] -> State GameBuilder (Game, IdGenerator)
+setActiveMinions i names = do
+    gb <- get
+    let (newMinions, newGen) = (gb^.gbLookupMinions) (gb^.gbIdGen) names
+    playerAt i.playerActiveMinions .= newMinions
+    gbIdGen .= newGen
     build
 
 build :: State GameBuilder (Game, IdGenerator)

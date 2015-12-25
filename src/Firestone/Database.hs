@@ -3,6 +3,13 @@ module Firestone.Database where
 import Firestone.Minion
 import Firestone.IdGenerator
 
+import Control.Lens
+
+lookupMinions :: IdGenerator -> [String] -> ([Minion], IdGenerator)
+lookupMinions idGen = foldr go ([], idGen)
+  where
+    go name (minions, gen) = (lookupMinion gen name) & _1 %~ (flip (:) minions)
+
 -- todo: Imp Gang Boss
 
 lookupMinion :: IdGenerator -> String -> (Minion, IdGenerator)
