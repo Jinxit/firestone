@@ -7,7 +7,7 @@ import Firestone.IdGenerator
 import Control.Lens
 
 lookupMultiple :: (IdGenerator -> String -> (a, IdGenerator))
-                  -> IdGenerator -> [String] -> ([a], IdGenerator)
+               -> IdGenerator -> [String] -> ([a], IdGenerator)
 lookupMultiple lookup idGen = foldr go ([], idGen)
   where
     go name (rest, gen) = (lookup gen name) & _1 %~ (flip (:) rest)
