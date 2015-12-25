@@ -1,21 +1,28 @@
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
+
 module Firestone.Hero where
 
-data Hero = Hero { heroId :: String
-                 , heroName :: String
-                 , heroHealth :: Int
-                 , heroMaxHealth :: Int
-                 , heroMana :: Int
-                 , heroMaxMana :: Int
+import Control.Lens
+
+data Hero = Hero { _heroId :: String
+                 , _heroName :: String
+                 , _heroHealth :: Int
+                 , _heroMaxHealth :: Int
+                 , _heroMana :: Int
+                 , _heroMaxMana :: Int
                  } deriving (Show)
 
+makeLenses ''Hero
+
 instance Eq Hero where
-    (==) a b = heroId a == heroId b
+    (==) a b = a^.heroId  == b^.heroId 
 
 instance Ord Hero where
-    (<)  a b = heroId a <  heroId b
-    (<=) a b = heroId a <= heroId b
-    (>)  a b = heroId a >  heroId b
-    (>=) a b = heroId a >= heroId b
+    (<)  a b = a^.heroId  <  b^.heroId 
+    (<=) a b = a^.heroId  <= b^.heroId 
+    (>)  a b = a^.heroId  >  b^.heroId 
+    (>=) a b = a^.heroId  >= b^.heroId 
 
 makeHero :: String -> String -> Int -> Int -> Hero
 makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana

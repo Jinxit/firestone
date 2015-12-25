@@ -1,4 +1,9 @@
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
+
 module Firestone.Minion where
+
+import Control.Lens
 
 data MinionRace = Beast
                 | Demon
@@ -16,26 +21,28 @@ data MinionState = DivineShield
                  | Windfury
                  deriving (Show, Eq)
 
-data Minion = Minion { minionId :: String
-                     , minionName :: String
-                     , minionHealth :: Int
-                     , minionMaxHealth :: Int
-                     , minionOriginalHealth :: Int
-                     , minionAttack :: Int
-                     , minionOriginalAttack :: Int
-                     , minionRace :: MinionRace
-                     , minionStates :: [MinionState]
-                     , minionIsSleepy :: Bool
+data Minion = Minion { _minionId :: String
+                     , _minionName :: String
+                     , _minionHealth :: Int
+                     , _minionMaxHealth :: Int
+                     , _minionOriginalHealth :: Int
+                     , _minionAttack :: Int
+                     , _minionOriginalAttack :: Int
+                     , _minionRace :: MinionRace
+                     , _minionStates :: [MinionState]
+                     , _minionIsSleepy :: Bool
                      } deriving (Show)
 
+makeLenses ''Minion
+
 instance Eq Minion where
-    (==) a b = minionId a == minionId b
+    (==) a b = a^.minionId == b^.minionId
 
 instance Ord Minion where
-    (<)  a b = minionId a <  minionId b
-    (<=) a b = minionId a <= minionId b
-    (>)  a b = minionId a >  minionId b
-    (>=) a b = minionId a >= minionId b
+    (<)  a b = a^.minionId <  b^.minionId
+    (<=) a b = a^.minionId <= b^.minionId
+    (>)  a b = a^.minionId >  b^.minionId
+    (>=) a b = a^.minionId >= b^.minionId
 
 makeMinion :: String -> String -> Int -> Int -> MinionRace -> [MinionState] -> Bool -> Minion
 makeMinion mId mName mAttack mHealth mRace mStates mIsSleepy = minion
