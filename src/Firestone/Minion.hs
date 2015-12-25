@@ -23,11 +23,11 @@ data MinionState = DivineShield
 
 data Minion = Minion { _minionId :: String
                      , _minionName :: String
+                     , _minionAttack :: Int
+                     , _minionOriginalAttack :: Int
                      , _minionHealth :: Int
                      , _minionMaxHealth :: Int
                      , _minionOriginalHealth :: Int
-                     , _minionAttack :: Int
-                     , _minionOriginalAttack :: Int
                      , _minionRace :: MinionRace
                      , _minionStates :: [MinionState]
                      , _minionIsSleepy :: Bool
