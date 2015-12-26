@@ -5,7 +5,11 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.Game where
+module Firestone.Game ( Game(..)
+                      , makeGame
+                      , playerInTurn
+                      , endTurn
+                      ) where
 
 import Firestone.Event
 import Firestone.Player
@@ -23,12 +27,13 @@ data Game = Game { gamePlayers :: [Player]
 makeFields ''Game
 
 makeGame :: [Player] -> Int -> Game
-makeGame ps turn = flip evalState ps $ do
-    zoom (ix 0.hero) $ do
+makeGame ps turn = execState start (Game ps turn)
+
+start :: State Game ()
+start = do
+    zoom (players.ix 0.hero) $ do
         mana .= 1
         maxMana .= 1
-    newPlayers <- get
-    return $ Game newPlayers turn
 
 playerInTurn :: State Game Player
 playerInTurn = do
