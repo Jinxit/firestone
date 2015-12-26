@@ -26,6 +26,7 @@ library
                      , Firestone.IdGenerator
                      , Firestone.Game
                      , Firestone.Event
+                     , Firestone.Error
   build-depends:       base >= 4.7 && < 5
                      , mtl
                      , lens
