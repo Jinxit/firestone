@@ -1,5 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Game where
 
@@ -12,29 +16,34 @@ import Firestone.Hero
 import Control.Monad.State
 import Control.Lens
 
-data Game = Game { _gamePlayers :: [Player]
-                 , _gameTurn :: Int
+data Game = Game { gamePlayers :: [Player]
+                 , gameTurn :: Int
                  } deriving (Show)
 
-makeLenses ''Game
+makeFields ''Game
 
 makeGame :: [Player] -> Int -> Game
-makeGame players turn = Game players turn
+makeGame ps turn = flip evalState ps $ do
+    zoom (ix 0.hero) $ do
+        mana .= 1
+        maxMana .= 1
+    newPlayers <- get
+    return $ Game newPlayers turn
 
-playerInTurn :: State Game (Player)
+playerInTurn :: State Game Player
 playerInTurn = do
     game <- get
-    return $ game^?!gamePlayers.traversed.index (game^.gameTurn)
+    return $ game^?!players.traversed.index (game^.turn)
 
-endTurn :: State Game ([Event])
+endTurn :: State Game [Event]
 endTurn = do
     game <- get
-    gameTurn %= flip mod (length (game^.gamePlayers)) . (+ 1)
-    zoom (gamePlayers.traversed.index (game^.gameTurn)) $ do
-        playerActiveMinions %= wake
-        zoom playerHero $ do
-            heroMaxMana %= min 10 . (+ 1)
-            heroMana <~ use heroMaxMana
+    turn %= flip mod (length (game^.players)) . (+ 1)
+    zoom (players.traversed.index (game^.turn)) $ do
+        activeMinions %= wake
+        zoom hero $ do
+            maxMana %= min 10 . (+ 1)
+            mana <~ use maxMana
     return []
   where
-    wake = map (set minionIsSleepy False)
+    wake = map (set isSleepy False)

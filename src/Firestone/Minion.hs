@@ -1,7 +1,16 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.Minion where
+module Firestone.Minion ( MinionRace(..)
+                        , MinionState(..)
+                        , Minion(..)
+                        , makeMinion
+                        , isSleepy
+                        ) where
 
 import Control.Lens
 
@@ -21,28 +30,28 @@ data MinionState = DivineShield
                  | Windfury
                  deriving (Show, Eq)
 
-data Minion = Minion { _minionId :: String
-                     , _minionName :: String
-                     , _minionAttack :: Int
-                     , _minionOriginalAttack :: Int
-                     , _minionHealth :: Int
-                     , _minionMaxHealth :: Int
-                     , _minionOriginalHealth :: Int
-                     , _minionRace :: MinionRace
-                     , _minionStates :: [MinionState]
-                     , _minionIsSleepy :: Bool
+data Minion = Minion { minionUuid :: String
+                     , minionName :: String
+                     , minionAttack :: Int
+                     , minionOriginalAttack :: Int
+                     , minionHealth :: Int
+                     , minionMaxHealth :: Int
+                     , minionOriginalHealth :: Int
+                     , minionRace :: MinionRace
+                     , minionStates :: [MinionState]
+                     , minionIsSleepy :: Bool
                      } deriving (Show)
 
-makeLenses ''Minion
+makeFields ''Minion
 
 instance Eq Minion where
-    (==) a b = a^.minionId == b^.minionId
+    (==) a b = a^.uuid == b^.uuid
 
 instance Ord Minion where
-    (<)  a b = a^.minionId <  b^.minionId
-    (<=) a b = a^.minionId <= b^.minionId
-    (>)  a b = a^.minionId >  b^.minionId
-    (>=) a b = a^.minionId >= b^.minionId
+    (<)  a b = a^.uuid <  b^.uuid
+    (<=) a b = a^.uuid <= b^.uuid
+    (>)  a b = a^.uuid >  b^.uuid
+    (>=) a b = a^.uuid >= b^.uuid
 
 makeMinion :: String -> String -> Int -> Int -> MinionRace -> [MinionState] -> Bool -> Minion
 makeMinion mId mName mAttack mHealth mRace mStates mIsSleepy = minion

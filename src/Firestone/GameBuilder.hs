@@ -1,7 +1,17 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.GameBuilder where
+module Firestone.GameBuilder ( buildGame
+                             , addPlayer
+                             , setMaxHealth
+                             , setStartingMana
+                             , setActiveMinions
+                             , setDeck
+                             ) where
 
 import Firestone.Minion
 import Firestone.Card
@@ -14,13 +24,15 @@ import Firestone.IdGenerator
 import Control.Monad.State
 import Control.Lens
 
-data GameBuilder = GameBuilder { _gbPlayers :: [Player]
-                               , _gbIdGen :: IdGenerator
-                               , _gbLookupMinions :: (IdGenerator -> [String] -> ([Minion], IdGenerator))
-                               , _gbLookupCards :: (IdGenerator -> [String] -> ([Card], IdGenerator))
+data GameBuilder = GameBuilder { gameBuilderPlayers :: [Player]
+                               , gameBuilderIdGen :: IdGenerator
+                               , gameBuilderLookupMinions :: (IdGenerator -> [String]
+                                                          -> ([Minion], IdGenerator))
+                               , gameBuilderLookupCards :: (IdGenerator -> [String]
+                                                        -> ([Card], IdGenerator))
                                }
 
-makeLenses ''GameBuilder
+makeFields ''GameBuilder
 
 buildGame :: IdGenerator
           -> (IdGenerator -> [String] -> ([Minion], IdGenerator))
@@ -32,51 +44,51 @@ buildGame idGen lookupMinions lookupCards buildActions =
 addPlayer :: String -> State GameBuilder (Game, IdGenerator)
 addPlayer heroName = do
     gb <- get
-    let (hId, idGen2) = create (gb^.gbIdGen) heroName
-    let hero = makeHero hId heroName 30 1
+    let (hId, idGen2) = create (gb^.idGen) heroName
+    let hero = makeHero hId heroName 30 0
     let (pId, idGen3) = create idGen2 "player"
     let player = makePlayer pId hero
-    gbPlayers %= (|> player)
-    gbIdGen .= idGen3
+    players %= (|> player)
+    idGen .= idGen3
     build
 
 playerAt :: Int -> Traversal' GameBuilder Player
-playerAt i = gbPlayers.traversed.index (i - 1)
+playerAt i = players.traversed.index (i - 1)
 
 heroAt :: Int -> Traversal' GameBuilder Hero
-heroAt i = playerAt i.playerHero
+heroAt i = playerAt i.hero
 
 setMaxHealth :: Int -> Int -> State GameBuilder (Game, IdGenerator)
-setMaxHealth i health = do
+setMaxHealth i newHealth = do
     zoom (heroAt i) $ do
-        heroHealth .= health
-        heroMaxHealth .= health
+        health .= newHealth
+        maxHealth .= newHealth
     build
 
 setStartingMana :: Int -> Int -> State GameBuilder (Game, IdGenerator)
-setStartingMana i mana = do
+setStartingMana i newMana = do
     zoom (heroAt i) $ do
-        heroMana .= mana
-        heroMaxMana .= mana
+        mana .= newMana
+        maxMana .= newMana
     build
 
 setActiveMinions :: Int -> [String] -> State GameBuilder (Game, IdGenerator)
 setActiveMinions i names = do
     gb <- get
-    let (newMinions, newGen) = (gb^.gbLookupMinions) (gb^.gbIdGen) names
-    playerAt i.playerActiveMinions .= newMinions
-    gbIdGen .= newGen
+    let (newMinions, newGen) = (gb^.lookupMinions) (gb^.idGen) names
+    playerAt i.activeMinions .= newMinions
+    idGen .= newGen
     build
 
 setDeck :: Int -> [String] -> State GameBuilder (Game, IdGenerator)
 setDeck i names = do
     gb <- get
-    let (newCards, newGen) = (gb^.gbLookupCards) (gb^.gbIdGen) names
-    playerAt i.playerDeck.deckCards .= newCards
-    gbIdGen .= newGen
+    let (newCards, newGen) = (gb^.lookupCards) (gb^.idGen) names
+    playerAt i.deck.cards .= newCards
+    idGen .= newGen
     build
 
 build :: State GameBuilder (Game, IdGenerator)
 build = do
     gb <- get
-    return $ (makeGame (gb^.gbPlayers) 0, gb^.gbIdGen)
+    return (makeGame (gb^.players) 0, gb^.idGen)

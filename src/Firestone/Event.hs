@@ -1,5 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Event where
 
@@ -8,11 +12,11 @@ import Firestone.Card
 
 import Control.Lens
 
-data Event = Attack   { _eventAttacker :: Minion
-                      , _eventTarget :: Minion
+data Event = Attack   { eventAttacker :: Minion
+                      , eventTarget :: Minion
                       }
-           | PlayCard { _eventCard :: Card
-                      , _eventTarget :: Minion
+           | PlayCard { eventCard :: Card
+                      , eventTarget :: Minion
                       }
 
-makeLenses ''Event
+makeFields ''Event

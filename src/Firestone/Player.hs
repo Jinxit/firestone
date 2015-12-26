@@ -1,5 +1,9 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Player where
 
@@ -11,24 +15,24 @@ import Firestone.Deck
 import Control.Monad.State
 import Control.Lens
 
-data Player = Player { _playerId :: String
-                     , _playerHero :: Hero
-                     , _playerHand :: [Card]
-                     , _playerActiveMinions :: [Minion]
-                     , _playerDeck :: Deck
-                     , _playerFatigue :: Int
+data Player = Player { playerUuid :: String
+                     , playerHero :: Hero
+                     , playerHand :: [Card]
+                     , playerActiveMinions :: [Minion]
+                     , playerDeck :: Deck
+                     , playerFatigue :: Int
                      } deriving (Show)
 
-makeLenses ''Player
+makeFields ''Player
 
 instance Eq Player where
-    (==) a b = a^.playerId  == b^.playerId
+    (==) a b = a^.uuid  == b^.uuid
 
 instance Ord Player where
-    (<)  a b = a^.playerId  <  b^.playerId
-    (<=) a b = a^.playerId  <= b^.playerId
-    (>)  a b = a^.playerId  >  b^.playerId
-    (>=) a b = a^.playerId  >= b^.playerId
+    (<)  a b = a^.uuid  <  b^.uuid
+    (<=) a b = a^.uuid  <= b^.uuid
+    (>)  a b = a^.uuid  >  b^.uuid
+    (>=) a b = a^.uuid  >= b^.uuid
 
 makePlayer :: String -> Hero -> Player
 makePlayer pId pHero = Player pId pHero [] [] (Deck []) 1
@@ -36,12 +40,12 @@ makePlayer pId pHero = Player pId pHero [] [] (Deck []) 1
 drawCard :: State Player ()
 drawCard = do
     player <- get
-    let cards = player^.playerDeck.deckCards
-    case length cards of
+    let deckCards = player^.deck.cards
+    case length deckCards of
         0 -> do
-            playerHero.heroHealth -= player^.playerFatigue
-            playerFatigue += 1
+            hero.health -= player^.fatigue
+            fatigue += 1
         otherwise -> do
-            let (x:xs) = player^.playerDeck.deckCards
-            playerHand %= take 10 . (|> x)
-            playerDeck.deckCards .= xs
+            let (x:xs) = deckCards
+            hand %= take 10 . (|> x)
+            deck.cards .= xs
