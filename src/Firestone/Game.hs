@@ -56,9 +56,7 @@ endTurn = do
     zoom (players.ix t) $ do
         activeMinions %= wake
         drawCard
-        zoom hero $ do
-            maxMana %= min 10 . (+ 1)
-            mana <~ use maxMana
+        zoom hero increaseMana
     return []
   where
     wake = map (set isSleepy False)

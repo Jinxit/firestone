@@ -11,8 +11,10 @@ module Firestone.Hero ( Hero(..)
                       , maxHealth
                       , mana
                       , maxMana
+                      , increaseMana
                       ) where
 
+import Control.Monad.State
 import Control.Lens
 
 data Hero = Hero { heroUuid :: String
@@ -36,3 +38,8 @@ instance Ord Hero where
 
 makeHero :: String -> String -> Int -> Int -> Hero
 makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana
+
+increaseMana :: State Hero ()
+increaseMana = do
+    maxMana %= min 10 . (+ 1)
+    mana <~ use maxMana

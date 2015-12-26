@@ -42,3 +42,11 @@ spec = do
             let game2 = play game $ replicateM 6 endTurn
             game2^?!players.ix 0.hero.health `shouldBe` 2
             game2^?!players.ix 1.hero.health `shouldBe` 2
+
+    describe "mana" $ do
+        it "should start with correct mana" $ do
+            let game = buildGame $ addPlayers 2
+            game^?!players.ix 0.hero.mana `shouldBe` 1
+            game^?!players.ix 0.hero.maxMana `shouldBe` 1
+            game^?!players.ix 1.hero.mana `shouldBe` 0
+            game^?!players.ix 1.hero.maxMana `shouldBe` 0
