@@ -30,9 +30,13 @@ makeGame :: [Player] -> Int -> Game
 makeGame ps turn = execState start (Game ps turn)
 
 start :: State Game ()
-start = zoom (players.ix 0.hero) $ do
-    mana .= 1
-    maxMana .= 1
+start = do
+    zoom (players.ix 0) $ do
+        drawCard
+        zoom hero $ do
+            mana .= 1
+            maxMana .= 1
+    zoom (players.traversed) (replicateM_ 3 drawCard)
 
 playerInTurn :: State Game Player
 playerInTurn = do
@@ -45,6 +49,7 @@ endTurn = do
     turn %= flip mod (length (game^.players)) . (+ 1)
     zoom (players.traversed.index (game^.turn)) $ do
         activeMinions %= wake
+        drawCard
         zoom hero $ do
             maxMana %= min 10 . (+ 1)
             mana <~ use maxMana

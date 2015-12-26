@@ -5,7 +5,13 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.Player where
+module Firestone.Player ( Player(..)
+                        , hero
+                        , activeMinions
+                        , deck
+                        , makePlayer
+                        , drawCard
+                        ) where
 
 import Firestone.Hero
 import Firestone.Card
