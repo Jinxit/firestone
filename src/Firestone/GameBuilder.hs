@@ -51,7 +51,7 @@ addPlayers :: Int -> State GameBuilder Game
 addPlayers n = replicateM_ n (addPlayer "hero") >> build
 
 playerAt :: Int -> Traversal' GameBuilder Player
-playerAt i = players.traversed.index (i - 1)
+playerAt i = players.ix (i - 1)
 
 heroAt :: Int -> Traversal' GameBuilder Hero
 heroAt i = playerAt i.hero

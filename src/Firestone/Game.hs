@@ -47,13 +47,13 @@ start = do
 playerInTurn :: State Game Player
 playerInTurn = do
     game <- get
-    return $ game^?!players.traversed.index (game^.turn)
+    return $ game^?!players.ix (game^.turn)
 
 endTurn :: State Game [Event]
 endTurn = do
     game <- get
     t <- turn <%= flip mod (length (game^.players)) . (+ 1)
-    zoom (players.traversed.index t) $ do
+    zoom (players.ix t) $ do
         activeMinions %= wake
         drawCard
         zoom hero $ do
