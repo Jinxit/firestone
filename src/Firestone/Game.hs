@@ -30,10 +30,9 @@ makeGame :: [Player] -> Int -> Game
 makeGame ps turn = execState start (Game ps turn)
 
 start :: State Game ()
-start = do
-    zoom (players.ix 0.hero) $ do
-        mana .= 1
-        maxMana .= 1
+start = zoom (players.ix 0.hero) $ do
+    mana .= 1
+    maxMana .= 1
 
 playerInTurn :: State Game Player
 playerInTurn = do
