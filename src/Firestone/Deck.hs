@@ -5,7 +5,9 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.Deck where
+module Firestone.Deck ( Deck(..)
+                      , cards
+                      ) where
 
 import Firestone.Card
 
