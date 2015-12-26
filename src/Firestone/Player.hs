@@ -6,7 +6,9 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Player ( Player(..)
+                        , uuid
                         , hero
+                        , hand
                         , activeMinions
                         , deck
                         , makePlayer
@@ -46,12 +48,11 @@ makePlayer pId pHero = Player pId pHero [] [] (Deck []) 1
 drawCard :: State Player ()
 drawCard = do
     player <- get
-    let deckCards = player^.deck.cards
-    case length deckCards of
+    case length (player^.deck.cards) of
         0 -> do
             hero.health -= player^.fatigue
             fatigue += 1
         otherwise -> do
-            let (x:xs) = deckCards
+            let (x:xs) = player^.deck.cards
             hand %= take 10 . (|> x)
             deck.cards .= xs

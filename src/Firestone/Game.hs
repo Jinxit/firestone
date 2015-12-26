@@ -7,8 +7,10 @@
 
 module Firestone.Game ( Game(..)
                       , makeGame
+                      , players
                       , playerInTurn
                       , endTurn
+                      , play
                       ) where
 
 import Firestone.Event
@@ -16,27 +18,31 @@ import Firestone.Player
 import Firestone.Error
 import Firestone.Minion
 import Firestone.Hero
+import Firestone.IdGenerator
 
 import Control.Monad.State
 import Control.Lens
 
 data Game = Game { gamePlayers :: [Player]
                  , gameTurn :: Int
+                 , gameIdGen :: IdGenerator
                  } deriving (Show)
 
 makeFields ''Game
 
-makeGame :: [Player] -> Int -> Game
-makeGame ps turn = execState start (Game ps turn)
+makeGame :: [Player] -> Int -> IdGenerator -> Game
+makeGame ps turn idGen = execState start (Game ps turn idGen)
+
+play :: Game -> State Game a -> Game
+play = flip execState
 
 start :: State Game ()
 start = do
     zoom (players.ix 0) $ do
-        drawCard
         zoom hero $ do
             mana .= 1
             maxMana .= 1
-    zoom (players.traversed) (replicateM_ 3 drawCard)
+    zoom (players.traversed) $ replicateM_ 4 drawCard
 
 playerInTurn :: State Game Player
 playerInTurn = do
@@ -46,8 +52,8 @@ playerInTurn = do
 endTurn :: State Game [Event]
 endTurn = do
     game <- get
-    turn %= flip mod (length (game^.players)) . (+ 1)
-    zoom (players.traversed.index (game^.turn)) $ do
+    t <- turn <%= flip mod (length (game^.players)) . (+ 1)
+    zoom (players.traversed.index t) $ do
         activeMinions %= wake
         drawCard
         zoom hero $ do
