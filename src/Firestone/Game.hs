@@ -18,9 +18,11 @@ import Firestone.Event
 import Firestone.Player
 import Firestone.Error
 import Firestone.Minion hiding (canAttack)
+import qualified Firestone.Minion as M
 import Firestone.Hero hiding (canAttack)
 import Firestone.IdGenerator
-import Firestone.Character
+import Firestone.Character hiding (canAttack)
+import qualified Firestone.Character as C
 
 import Data.Monoid
 import Data.Maybe
@@ -105,14 +107,17 @@ ownerOf ps (CHero h) = safeHead ("Ownerless hero found: " ++ (h^.uuid)) match
     ownsHero p = h == (p^.hero)
     match = filter ownsHero ps
 
--- TODO: canAttack :: Player -> Minion -> State Game (Bool)
+canAttack :: Player -> Minion -> State Game (Bool)
+canAttack p m = do
+    currentPlayer <- playerInTurn
+    return $ M.canAttack m && currentPlayer == p
 
 isAttackValid :: String -> String -> State Game (Either String Bool)
 isAttackValid attackerId targetId = do
     ps <- use players
     let attacker = getCharacter attackerId ps
     let target = getCharacter targetId ps
-    return $ and <$> sequence [ canAttack <$> attacker
+    return $ and <$> sequence [ C.canAttack <$> attacker
                               , (/=) <$> (ownerOf ps <$> attacker)
                                      <*> (ownerOf ps <$> target)
                               ]
