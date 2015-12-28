@@ -6,13 +6,19 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Hero ( Hero(..)
-                      , makeHero
-                      , health
-                      , maxHealth
+                      , HasUuid(..)
+                      , HasName(..)
+                      , HasHealth(..)
+                      , HasMaxHealth(..)
+                      , HasAttack(..)
                       , mana
                       , maxMana
+                      , makeHero
                       , increaseMana
+                      , canAttack
                       ) where
+
+import Firestone.Minion hiding (canAttack)
 
 import Control.Monad.State
 import Control.Lens
@@ -23,6 +29,7 @@ data Hero = Hero { heroUuid :: String
                  , heroMaxHealth :: Int
                  , heroMana :: Int
                  , heroMaxMana :: Int
+                 , heroAttack :: Int
                  } deriving (Show)
 
 makeFields ''Hero
@@ -37,9 +44,12 @@ instance Ord Hero where
     (>=) a b = a^.uuid  >= b^.uuid
 
 makeHero :: String -> String -> Int -> Int -> Hero
-makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana
+makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana 0
 
 increaseMana :: State Hero ()
 increaseMana = do
     maxMana %= min 10 . (+ 1)
     mana <~ use maxMana
+
+canAttack :: Hero -> Bool
+canAttack h = h^.attack > 0

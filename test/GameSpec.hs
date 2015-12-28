@@ -6,6 +6,7 @@ import Firestone.GameBuilder
 import Firestone.Card
 import Firestone.Hero
 import Firestone.Deck
+import Firestone.Character
 
 import Control.Monad.State
 import Control.Lens

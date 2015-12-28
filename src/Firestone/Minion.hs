@@ -8,8 +8,14 @@
 module Firestone.Minion ( MinionRace(..)
                         , MinionState(..)
                         , Minion(..)
+                        , HasUuid(..)
+                        , HasName(..)
+                        , HasHealth(..)
+                        , HasMaxHealth(..)
+                        , HasAttack(..)
                         , makeMinion
                         , isSleepy
+                        , canAttack
                         ) where
 
 import Control.Lens
@@ -57,3 +63,6 @@ makeMinion :: String -> String -> Int -> Int -> MinionRace -> [MinionState] -> B
 makeMinion mId mName mAttack mHealth mRace mStates mIsSleepy = minion
   where
     minion = Minion mId mName mAttack mAttack mHealth mHealth mHealth mRace mStates mIsSleepy
+
+canAttack :: Minion -> Bool
+canAttack m = not (m^.isSleepy) && m^.attack > 0

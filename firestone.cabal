@@ -27,6 +27,7 @@ library
                      , Firestone.Game
                      , Firestone.Event
                      , Firestone.Error
+                     , Firestone.Character
   build-depends:       base >= 4.7 && < 5
                      , mtl
                      , lens

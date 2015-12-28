@@ -6,7 +6,6 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Player ( Player(..)
-                        , uuid
                         , hero
                         , hand
                         , activeMinions
