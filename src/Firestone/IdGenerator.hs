@@ -6,5 +6,5 @@ data IdGenerator = IdGenerator Int
 makeIdGenerator :: IdGenerator
 makeIdGenerator = IdGenerator 0
 
-create :: IdGenerator -> String -> (String, IdGenerator)
-create (IdGenerator n) name = (name ++ (show n), IdGenerator (n + 1))
+create :: IdGenerator -> String -> (String, Int, IdGenerator)
+create (IdGenerator n) name = (name ++ (show n), n, IdGenerator (n + 1))

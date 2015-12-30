@@ -39,9 +39,9 @@ buildGame buildActions =
 addPlayer :: String -> State GameBuilder Game
 addPlayer heroName = do
     gb <- get
-    let (hId, idGen2) = create (gb^.idGen) heroName
+    let (hId, _, idGen2) = create (gb^.idGen) heroName
     let hero = makeHero hId heroName 30 0
-    let (pId, idGen3) = create idGen2 "player"
+    let (pId, _, idGen3) = create idGen2 "player"
     let player = makePlayer pId hero
     players %= (|> player)
     idGen .= idGen3

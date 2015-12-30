@@ -37,12 +37,6 @@ makeFields ''Hero
 instance Eq Hero where
     (==) a b = a^.uuid  == b^.uuid
 
-instance Ord Hero where
-    (<)  a b = a^.uuid  <  b^.uuid
-    (<=) a b = a^.uuid  <= b^.uuid
-    (>)  a b = a^.uuid  >  b^.uuid
-    (>=) a b = a^.uuid  >= b^.uuid
-
 makeHero :: String -> String -> Int -> Int -> Hero
 makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana 0
 
