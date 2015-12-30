@@ -10,7 +10,7 @@ module Firestone.Hero ( Hero(..)
                       , HasName(..)
                       , HasHealth(..)
                       , HasMaxHealth(..)
-                      , HasAttack(..)
+                      , HasAttackValue(..)
                       , mana
                       , maxMana
                       , makeHero
@@ -29,7 +29,7 @@ data Hero = Hero { heroUuid :: String
                  , heroMaxHealth :: Int
                  , heroMana :: Int
                  , heroMaxMana :: Int
-                 , heroAttack :: Int
+                 , heroAttackValue :: Int
                  } deriving (Show)
 
 makeFields ''Hero
@@ -52,4 +52,4 @@ increaseMana = do
     mana <~ use maxMana
 
 canAttack :: Hero -> Bool
-canAttack h = h^.attack > 0
+canAttack h = h^.attackValue > 0

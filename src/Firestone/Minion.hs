@@ -12,7 +12,7 @@ module Firestone.Minion ( MinionRace(..)
                         , HasName(..)
                         , HasHealth(..)
                         , HasMaxHealth(..)
-                        , HasAttack(..)
+                        , HasAttackValue(..)
                         , makeMinion
                         , isSleepy
                         , canAttack
@@ -38,8 +38,8 @@ data MinionState = DivineShield
 
 data Minion = Minion { minionUuid :: String
                      , minionName :: String
-                     , minionAttack :: Int
-                     , minionOriginalAttack :: Int
+                     , minionAttackValue :: Int
+                     , minionOriginalAttackValue :: Int
                      , minionHealth :: Int
                      , minionMaxHealth :: Int
                      , minionOriginalHealth :: Int
@@ -65,4 +65,4 @@ makeMinion mId mName mAttack mHealth mRace mStates mIsSleepy = minion
     minion = Minion mId mName mAttack mAttack mHealth mHealth mHealth mRace mStates mIsSleepy
 
 canAttack :: Minion -> Bool
-canAttack m = not (m^.isSleepy) && m^.attack > 0
+canAttack m = not (m^.isSleepy) && m^.attackValue > 0

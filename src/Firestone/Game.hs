@@ -12,14 +12,16 @@ module Firestone.Game ( Game(..)
                       , playerInTurn
                       , endTurn
                       , play
+                      , attack
+                      , canAttack
                       ) where
 
 import Firestone.Event
 import Firestone.Player
 import Firestone.Error
-import Firestone.Minion hiding (canAttack)
+import Firestone.Minion hiding (canAttack, attack)
 import qualified Firestone.Minion as M
-import Firestone.Hero hiding (canAttack)
+import Firestone.Hero hiding (canAttack, attack)
 import Firestone.IdGenerator
 import Firestone.Character hiding (canAttack)
 import qualified Firestone.Character as C
@@ -48,14 +50,6 @@ makeGame ps turn idGen = execState start (Game ps turn idGen)
 play :: Game -> State Game a -> Game
 play = flip execState
 
-start :: State Game ()
-start = do
-    zoom (players.ix 0) $ do
-        zoom hero $ do
-            mana .= 1
-            maxMana .= 1
-    zoom (players.traversed) $ replicateM_ 4 drawCard
-
 playerInTurn :: State Game Player
 playerInTurn = do
     game <- get
@@ -63,15 +57,40 @@ playerInTurn = do
 
 endTurn :: State Game [Event]
 endTurn = do
-    game <- get
-    t <- turn <%= \x -> (x + 1) `mod` (length (game^.players))
+    playerCount <- uses players length
+    t <- turn <%= \x -> (x + 1) `mod` playerCount
     zoom (players.ix t) $ do
-        activeMinions %= wake
+        activeMinions.traversed.isSleepy .= False
         drawCard
         zoom hero increaseMana
     return []
-  where
-    wake = map (set isSleepy False)
+
+canAttack :: Player -> Minion -> State Game Bool
+canAttack p m = do
+    currentPlayer <- playerInTurn
+    return $ M.canAttack m && currentPlayer == p
+
+isAttackValid :: String -> String -> State Game (Either String Bool)
+isAttackValid attackerId targetId = do
+    ps <- use players
+    let attacker = getCharacter attackerId ps
+    let target = getCharacter targetId ps
+    return $ and <$> sequence [ C.canAttack <$> attacker
+                              , (/=) <$> (ownerOf ps <$> attacker)
+                                     <*> (ownerOf ps <$> target)
+                              ]
+
+attack :: Player -> String -> String -> State Game (Either String [Event])
+attack player attackerId targetId = return $ Left "boom"
+
+start :: State Game ()
+start = do
+    zoom (players.ix 0) $ do
+        zoom hero $ do
+            mana .= 1
+            maxMana .= 1
+        activeMinions.traversed.isSleepy .= False
+    zoom (players.traversed) $ replicateM_ 4 drawCard
 
 sameUuid :: HasUuid a String => String -> a -> Bool
 sameUuid charId char = charId == (char^.uuid)
@@ -106,18 +125,3 @@ ownerOf ps (CHero h) = safeHead ("Ownerless hero found: " ++ (h^.uuid)) match
   where
     ownsHero p = h == (p^.hero)
     match = filter ownsHero ps
-
-canAttack :: Player -> Minion -> State Game (Bool)
-canAttack p m = do
-    currentPlayer <- playerInTurn
-    return $ M.canAttack m && currentPlayer == p
-
-isAttackValid :: String -> String -> State Game (Either String Bool)
-isAttackValid attackerId targetId = do
-    ps <- use players
-    let attacker = getCharacter attackerId ps
-    let target = getCharacter targetId ps
-    return $ and <$> sequence [ C.canAttack <$> attacker
-                              , (/=) <$> (ownerOf ps <$> attacker)
-                                     <*> (ownerOf ps <$> target)
-                              ]
