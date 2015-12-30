@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes             #-}
+
 module GameSpec where
 
 import Firestone.Game
@@ -5,6 +7,7 @@ import Firestone.Player
 import Firestone.GameBuilder
 import Firestone.Card
 import Firestone.Hero hiding (canAttack)
+import Firestone.Minion hiding (canAttack)
 import Firestone.Deck
 
 import Control.Monad.State
@@ -80,3 +83,37 @@ spec = do
             let p2m' = p2'^?!activeMinions.ix 0
             evalState (canAttack p1' p1m') game2 `shouldBe` False
             evalState (canAttack p2' p2m') game2 `shouldBe` True
+
+        it "can only attack once per minion per turn" $ do
+            let game = buildGame $ do
+                    addPlayers 2
+                    setActiveMinions 1 ["Murloc Raider", "Murloc Raider"]
+                    setActiveMinions 2 ["Murloc Raider", "Murloc Raider"]
+            evalState (canAttack (game^?!p1) (game^?!p1.m 0)) game `shouldBe` True
+            evalState (canAttack (game^?!p1) (game^?!p1.m 1)) game `shouldBe` True
+            evalState (canAttack (game^?!p2) (game^?!p2.m 0)) game `shouldBe` False
+            evalState (canAttack (game^?!p2) (game^?!p2.m 1)) game `shouldBe` False
+            let game2 = play game $ attack (game^?!p1) (game^?!p1.m 0.uuid) (game^?!p2.hero.uuid)
+            evalState (canAttack (game2^?!p1) (game2^?!p1.m 0)) game2 `shouldBe` False
+            evalState (canAttack (game2^?!p1) (game2^?!p1.m 1)) game2 `shouldBe` True
+            evalState (canAttack (game2^?!p2) (game2^?!p2.m 0)) game2 `shouldBe` False
+            evalState (canAttack (game2^?!p2) (game2^?!p2.m 1)) game2 `shouldBe` False
+            let game3 = play game endTurn
+            evalState (canAttack (game3^?!p1) (game3^?!p1.m 0)) game3 `shouldBe` False
+            evalState (canAttack (game3^?!p1) (game3^?!p1.m 1)) game3 `shouldBe` False
+            evalState (canAttack (game3^?!p2) (game3^?!p2.m 0)) game3 `shouldBe` True
+            evalState (canAttack (game3^?!p2) (game3^?!p2.m 1)) game3 `shouldBe` True
+            let game4 = play game $ attack (game^?!p2) (game^?!p2.m 0.uuid) (game^?!p1.hero.uuid)
+            evalState (canAttack (game3^?!p1) (game3^?!p1.m 0)) game3 `shouldBe` False
+            evalState (canAttack (game3^?!p1) (game3^?!p1.m 1)) game3 `shouldBe` False
+            evalState (canAttack (game3^?!p2) (game3^?!p2.m 0)) game3 `shouldBe` False
+            evalState (canAttack (game3^?!p2) (game3^?!p2.m 1)) game3 `shouldBe` True
+
+p1 :: Traversal' Game Player
+p1 = players.ix 0
+
+p2 :: Traversal' Game Player
+p2 = players.ix 1
+
+m :: Int -> Traversal' Player Minion
+m i = activeMinions.ix i
