@@ -9,6 +9,7 @@ import Firestone.Card
 import Firestone.Hero hiding (canAttack)
 import Firestone.Minion hiding (canAttack)
 import Firestone.Deck
+import Firestone.Event
 
 import Control.Monad.State
 import Control.Lens
@@ -61,7 +62,7 @@ spec = do
                     addPlayers 2
                     setActiveMinions 1 ["Murloc Raider"]
             g^?!p1.hero.health `shouldBe` 20
-            let g2 = play g $ attack (g^?!p1) (g^?!p1.m 0.uuid) (g^?!p2.hero.uuid)
+            let g2 = play g $ simpleAttackHero p1 p2 0
             g2^?!p2.hero.health `shouldBe` 18
 
         it "can only attack on player's turn" $ do
@@ -85,7 +86,7 @@ spec = do
             canAttack' g p1 1 `shouldBe` True
             canAttack' g p2 0 `shouldBe` False
             canAttack' g p2 1 `shouldBe` False
-            let g2 = play g $ attack (g^?!p1) (g^?!p1.m 0.uuid) (g^?!p2.hero.uuid)
+            let g2 = play g $ simpleAttackHero p1 p2 0
             canAttack' g2 p1 0 `shouldBe` False
             canAttack' g2 p1 1 `shouldBe` True
             canAttack' g2 p2 0 `shouldBe` False
@@ -95,7 +96,7 @@ spec = do
             canAttack' g3 p1 1 `shouldBe` False
             canAttack' g3 p2 0 `shouldBe` True
             canAttack' g3 p2 1 `shouldBe` True
-            let g4 = play g3 $ attack (g3^?!p2) (g3^?!p2.m 0.uuid) (g3^?!p1.hero.uuid)
+            let g4 = play g3 $ simpleAttackHero p2 p1 0
             canAttack' g4 p1 0 `shouldBe` True
             canAttack' g4 p1 1 `shouldBe` True
             canAttack' g4 p2 0 `shouldBe` False
@@ -105,9 +106,8 @@ spec = do
             let g = buildGame $ do
                     addPlayers 2
                     setActiveMinions 1 ["Murloc Raider"]
-            let doAttack gn = attack (gn^?!p1) (gn^?!p1.m 0.uuid) (gn^?!p2.hero.uuid)
-            let g2 = play g (doAttack g)
-            evalState (doAttack g2) g2 `shouldSatisfy` isLeft
+            let g2 = play g (simpleAttackHero p1 p2 0)
+            evalState (simpleAttackHero p1 p2 0) g2 `shouldSatisfy` isLeft
 
         -- TODO: playedMinionsCannotAttackDirectly
 
@@ -125,14 +125,27 @@ spec = do
                     setActiveMinions 1 (replicate 4 "Murloc Raider")
                     setActiveMinions 2 ["Oasis Snapjaw"]
             let g2 = play g $ do
-                    replicateM 3 $ do
-                        gn <- get
-                        attack (gn^?!p1) (gn^?!p1.m 0.uuid) (gn^?!p2.m 0.uuid)
+                    replicateM 3 $ simpleAttack p1 p2 0 0
                     endTurn
-                    gn <- get
-                    attack (gn^?!p2) (gn^?!p2.m 0.uuid) (gn^?!p1.m 0.uuid)
+                    simpleAttack p2 p1 0 0
             length (g2^?!p1.activeMinions) `shouldBe` 0
             length (g2^?!p2.activeMinions) `shouldBe` 0
+
+        it "shouldn't remove non-dead minions" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setActiveMinions 1 ["Oasis Snapjaw", "Oasis Snapjaw"]
+                    setActiveMinions 2 ["Oasis Snapjaw"]
+            let g2 = play g $ do
+                    simpleAttack p1 p2 0 0
+                    simpleAttack p1 p2 1 0
+                    endTurn
+                    simpleAttack p2 p1 0 0
+            length (g2^?!p1.activeMinions) `shouldBe` 2
+            length (g2^?!p2.activeMinions) `shouldBe` 1
+            g2^?!p1.m 0.health `shouldBe` 3
+            g2^?!p1.m 1.health `shouldBe` 5
+            g2^?!p2.m 0.health `shouldBe` 1
 
 
 p1 :: Traversal' Game Player
@@ -143,3 +156,19 @@ p2 = players.ix 1
 
 m :: Int -> Traversal' Player Minion
 m i = activeMinions.ix i
+
+simpleAttack :: Traversal' Game Player -> Traversal' Game Player -> Int -> Int
+             -> State Game (Either String [Event])
+simpleAttack attacker target mi1 mi2 = do
+    game <- get
+    let attackerId = game^?!attacker.m mi1.uuid
+    let targetId = game^?!target.m mi2.uuid
+    attack (game^?!attacker) attackerId targetId
+
+simpleAttackHero :: Traversal' Game Player -> Traversal' Game Player -> Int
+                 -> State Game (Either String [Event])
+simpleAttackHero attacker target mi = do
+    game <- get
+    let attackerId = game^?!attacker.m mi.uuid
+    let targetId = game^?!target.hero.uuid
+    attack (game^?!attacker) attackerId targetId
