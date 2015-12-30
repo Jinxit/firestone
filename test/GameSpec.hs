@@ -119,7 +119,7 @@ spec = do
             let g3 = play g2 $ replicateM_ 2 endTurn
             murlocCanAttack g3 `shouldBe` False
 
-        it "can only attack enemy minions" $ do
+        it "can not attack friendly minions" $ do
             let g = buildGame $ do
                     addPlayers 2
                     setActiveMinions 1 ["Murloc Raider", "Magma Rager"]
