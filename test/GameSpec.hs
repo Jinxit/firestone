@@ -109,6 +109,16 @@ spec = do
             let g2 = play g (doAttack g)
             evalState (doAttack g2) g2 `shouldSatisfy` isLeft
 
+        -- TODO: playedMinionsCannotAttackDirectly
+
+        it "can only attack enemy minions" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setActiveMinions 1 ["Murloc Raider", "Magma Rager"]
+            let murlocId = g^?!p1.m 0.uuid
+            let magmaId = g^?!p1.m 1.uuid
+            evalState (isAttackValid murlocId magmaId) g `shouldBe` Right False
+
 p1 :: Traversal' Game Player
 p1 = players.ix 0
 

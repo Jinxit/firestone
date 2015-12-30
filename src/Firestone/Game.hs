@@ -14,6 +14,7 @@ module Firestone.Game ( Game(..)
                       , play
                       , attack
                       , canAttack
+                      , isAttackValid
                       ) where
 
 import Firestone.Event
