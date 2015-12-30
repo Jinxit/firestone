@@ -15,6 +15,7 @@ module Firestone.Game ( Game(..)
                       , attack
                       , canAttack
                       , isAttackValid
+                      , playMinionCard
                       ) where
 
 import Firestone.Event
@@ -26,6 +27,7 @@ import Firestone.Hero hiding (canAttack, attack)
 import Firestone.IdGenerator
 import Firestone.Character hiding (canAttack)
 import qualified Firestone.Character as C
+import Firestone.Card
 
 import Data.Monoid
 import Data.Maybe
@@ -83,6 +85,9 @@ isAttackValid attackerId targetId = do
 
 attack :: Player -> String -> String -> State Game (Either String [Event])
 attack player attackerId targetId = return $ Left "boom"
+
+playMinionCard :: Player -> Card -> Int -> State Game (Either String [Event])
+playMinionCard p c i = return $ Left "bam"
 
 start :: State Game ()
 start = do

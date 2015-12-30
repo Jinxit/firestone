@@ -109,7 +109,15 @@ spec = do
             let g2 = play g (simpleAttackHero p1 p2 0)
             evalState (simpleAttackHero p1 p2 0) g2 `shouldSatisfy` isLeft
 
-        -- TODO: playedMinionsCannotAttackDirectly
+        it "can not attack with just played minions" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setDeck 1 ["Murloc Raider"]
+            let murlocCanAttack gn = evalState (canAttack (gn^?!p1) (gn^?!p1^?!m 0)) gn
+            let g2 = play g $ playFirstMinionCard p1
+            murlocCanAttack g2 `shouldBe` False
+            let g3 = play g2 $ replicateM_ 2 endTurn
+            murlocCanAttack g3 `shouldBe` False
 
         it "can only attack enemy minions" $ do
             let g = buildGame $ do
@@ -172,3 +180,9 @@ simpleAttackHero attacker target mi = do
     let attackerId = game^?!attacker.m mi.uuid
     let targetId = game^?!target.hero.uuid
     attack (game^?!attacker) attackerId targetId
+
+playFirstMinionCard :: Traversal' Game Player -> State Game (Either String [Event])
+playFirstMinionCard player = do
+    game <- get
+    let p = game^?!player
+    playMinionCard p (p^?!hand.ix 0) 0
