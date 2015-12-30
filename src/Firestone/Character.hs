@@ -33,9 +33,9 @@ instance HasMaxHealth Character Int where
     maxHealth f (CMinion m) = CMinion <$> maxHealth f m
     maxHealth f (CHero h) = CHero <$> maxHealth f h
 
-instance HasAttack Character Int where
-    attack f (CMinion m) = CMinion <$> attack f m
-    attack f (CHero h) = CHero <$> attack f h
+instance HasAttackValue Character Int where
+    attackValue f (CMinion m) = CMinion <$> attackValue f m
+    attackValue f (CHero h) = CHero <$> attackValue f h
 
 class ( HasUuid s String
       , HasName s String
