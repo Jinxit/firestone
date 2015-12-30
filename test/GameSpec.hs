@@ -114,7 +114,7 @@ spec = do
                     addPlayers 2
                     setDeck 1 ["Murloc Raider"]
             let murlocCanAttack gn = evalState (canAttack (gn^?!p1) (gn^?!p1^?!m 0)) gn
-            let g2 = play g $ playFirstMinionCard p1
+            let g2 = play g $ playFirstMinionCard
             murlocCanAttack g2 `shouldBe` False
             let g3 = play g2 $ replicateM_ 2 endTurn
             murlocCanAttack g3 `shouldBe` False
@@ -166,6 +166,16 @@ spec = do
             g2^?!p2.hero.health `shouldBe` -4
             g2^.active `shouldBe` False
 
+    describe "play cards" $ do
+        it "should be able to summon minions" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setDeck 1 ["Murloc Raider", "Magma Rager", "Murloc Raider"]
+                    setStartingMana 1 10
+            let g2 = play g $ replicateM_ 3 playFirstMinionCard
+            length (g2^?!p1.hand) `shouldBe` 0
+            length (g2^?!p1.activeMinions) `shouldBe` 0
+
 p1 :: Traversal' Game Player
 p1 = players.ix 0
 
@@ -191,8 +201,8 @@ simpleAttackHero attacker target mi = do
     let targetId = game^?!target.hero.uuid
     attack (game^?!attacker) attackerId targetId
 
-playFirstMinionCard :: Traversal' Game Player -> State Game (Either String [Event])
-playFirstMinionCard player = do
+playFirstMinionCard :: State Game (Either String [Event])
+playFirstMinionCard = do
     game <- get
-    let p = game^?!player
-    playMinionCard p (p^?!hand.ix 0) 0
+    p <- playerInTurn
+    playMinionCard p (p^?!hand.ix 0) (length (p^?!activeMinions))
