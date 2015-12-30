@@ -119,6 +119,22 @@ spec = do
             let magmaId = g^?!p1.m 1.uuid
             evalState (isAttackValid murlocId magmaId) g `shouldBe` Right False
 
+        it "should remove dead minions" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setActiveMinions 1 (replicate 4 "Murloc Raider")
+                    setActiveMinions 2 ["Oasis Snapjaw"]
+            let g2 = play g $ do
+                    replicateM 3 $ do
+                        gn <- get
+                        attack (gn^?!p1) (gn^?!p1.m 0.uuid) (gn^?!p2.m 0.uuid)
+                    endTurn
+                    gn <- get
+                    attack (gn^?!p2) (gn^?!p2.m 0.uuid) (gn^?!p1.m 0.uuid)
+            length (g2^?!p1.activeMinions) `shouldBe` 0
+            length (g2^?!p2.activeMinions) `shouldBe` 0
+
+
 p1 :: Traversal' Game Player
 p1 = players.ix 0
 
