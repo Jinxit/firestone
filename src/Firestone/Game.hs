@@ -9,6 +9,7 @@
 module Firestone.Game ( Game(..)
                       , makeGame
                       , players
+                      , active
                       , playerInTurn
                       , endTurn
                       , play
@@ -38,6 +39,7 @@ import Control.Lens
 data Game = Game { gamePlayers :: [Player]
                  , gameTurn :: Int
                  , gameIdGen :: IdGenerator
+                 , gameActive :: Bool
                  } deriving (Show)
 
 makeFields ''Game
@@ -48,7 +50,7 @@ Left x  <-> Left y  = Left x
 Right x <-> _       = Right x
 
 makeGame :: [Player] -> Int -> IdGenerator -> Game
-makeGame ps turn idGen = execState start (Game ps turn idGen)
+makeGame ps turn idGen = execState start (Game ps turn idGen True)
 
 play :: Game -> State Game a -> Game
 play = flip execState

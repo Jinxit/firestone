@@ -155,6 +155,16 @@ spec = do
             g2^?!p1.m 1.health `shouldBe` 5
             g2^?!p2.m 0.health `shouldBe` 1
 
+    describe "hero" $ do
+        it "should die when health <= 1" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setActiveMinions 1 ["Magma Rager"]
+                    setMaxHealth 2 11
+            g^.active `shouldBe` False
+            let g2 = play g $ simpleAttackHero p1 p2 0
+            g2^?!p2.hero.health `shouldBe` -4
+            g2^.active `shouldBe` False
 
 p1 :: Traversal' Game Player
 p1 = players.ix 0
