@@ -12,6 +12,7 @@ import Firestone.Deck
 
 import Control.Monad.State
 import Control.Lens
+import Data.Either
 
 import Test.Hspec
 
@@ -79,25 +80,34 @@ spec = do
                     addPlayers 2
                     setActiveMinions 1 ["Murloc Raider", "Murloc Raider"]
                     setActiveMinions 2 ["Murloc Raider", "Murloc Raider"]
-            evalState (canAttack (g^?!p1) (g^?!p1.m 0)) g `shouldBe` True
-            evalState (canAttack (g^?!p1) (g^?!p1.m 1)) g `shouldBe` True
-            evalState (canAttack (g^?!p2) (g^?!p2.m 0)) g `shouldBe` False
-            evalState (canAttack (g^?!p2) (g^?!p2.m 1)) g `shouldBe` False
+            let canAttack' gn p mi = evalState (canAttack (gn^?!p) (gn^?!p^?!m mi)) gn
+            canAttack' g p1 0 `shouldBe` True
+            canAttack' g p1 1 `shouldBe` True
+            canAttack' g p2 0 `shouldBe` False
+            canAttack' g p2 1 `shouldBe` False
             let g2 = play g $ attack (g^?!p1) (g^?!p1.m 0.uuid) (g^?!p2.hero.uuid)
-            evalState (canAttack (g2^?!p1) (g2^?!p1.m 0)) g2 `shouldBe` False
-            evalState (canAttack (g2^?!p1) (g2^?!p1.m 1)) g2 `shouldBe` True
-            evalState (canAttack (g2^?!p2) (g2^?!p2.m 0)) g2 `shouldBe` False
-            evalState (canAttack (g2^?!p2) (g2^?!p2.m 1)) g2 `shouldBe` False
+            canAttack' g2 p1 0 `shouldBe` False
+            canAttack' g2 p1 1 `shouldBe` True
+            canAttack' g2 p2 0 `shouldBe` False
+            canAttack' g2 p2 1 `shouldBe` False
             let g3 = play g2 endTurn
-            evalState (canAttack (g3^?!p1) (g3^?!p1.m 0)) g3 `shouldBe` False
-            evalState (canAttack (g3^?!p1) (g3^?!p1.m 1)) g3 `shouldBe` False
-            evalState (canAttack (g3^?!p2) (g3^?!p2.m 0)) g3 `shouldBe` True
-            evalState (canAttack (g3^?!p2) (g3^?!p2.m 1)) g3 `shouldBe` True
+            canAttack' g3 p1 0 `shouldBe` False
+            canAttack' g3 p1 1 `shouldBe` False
+            canAttack' g3 p2 0 `shouldBe` True
+            canAttack' g3 p2 1 `shouldBe` True
             let g4 = play g3 $ attack (g3^?!p2) (g3^?!p2.m 0.uuid) (g3^?!p1.hero.uuid)
-            evalState (canAttack (g4^?!p1) (g4^?!p1.m 0)) g3 `shouldBe` False
-            evalState (canAttack (g4^?!p1) (g4^?!p1.m 1)) g3 `shouldBe` False
-            evalState (canAttack (g4^?!p2) (g4^?!p2.m 0)) g3 `shouldBe` False
-            evalState (canAttack (g4^?!p2) (g4^?!p2.m 1)) g3 `shouldBe` True
+            canAttack' g4 p1 0 `shouldBe` True
+            canAttack' g4 p1 1 `shouldBe` True
+            canAttack' g4 p2 0 `shouldBe` False
+            canAttack' g4 p2 1 `shouldBe` False
+
+        it "should produce error when attacking twice per turn with same minion" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setActiveMinions 1 ["Murloc Raider"]
+            let doAttack gn = attack (gn^?!p1) (gn^?!p1.m 0.uuid) (gn^?!p2.hero.uuid)
+            let g2 = play g (doAttack g)
+            evalState (doAttack g2) g2 `shouldSatisfy` isLeft
 
 p1 :: Traversal' Game Player
 p1 = players.ix 0

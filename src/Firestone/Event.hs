@@ -18,5 +18,6 @@ data Event = Attack   { eventAttacker :: Minion
            | PlayCard { eventCard :: Card
                       , eventTarget :: Minion
                       }
+            deriving (Show)
 
 makeFields ''Event
