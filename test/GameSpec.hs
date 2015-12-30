@@ -189,7 +189,7 @@ spec = do
                     addPlayers 2
                     setActiveMinions 1 ["Magma Rager"]
                     setMaxHealth 2 11
-            g^.active `shouldBe` False
+            g^.active `shouldBe` True
             let g2 = play g $ simpleAttackHero p1 p2 0
             g2^?!p2.hero.health `shouldBe` -4
             g2^.active `shouldBe` False
