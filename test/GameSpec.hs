@@ -55,6 +55,34 @@ spec = do
             g^?!p1.hero.maxMana `shouldBe` 1
             g^?!p2.hero.mana `shouldBe` 0
             g^?!p2.hero.maxMana `shouldBe` 0
+        it "should increase on new turn" $ do
+            let g = buildGame $ addPlayers 2
+            let g2 = play g endTurn
+            let checkManaAndEndTurn = do
+                    (i, gn) <- get
+                    let h1 = gn^?!p1.hero
+                    let h2 = gn^?!p2.hero
+                    liftIO $ h1^.mana `shouldBe` i
+                    liftIO $ h1^.maxMana `shouldBe` i
+                    liftIO $ h2^.mana `shouldBe` i
+                    liftIO $ h2^.maxMana `shouldBe` i
+                    put $ (i + 1, play gn $ replicateM 2 endTurn)
+            (_, g3) <- execStateT (replicateM 10 checkManaAndEndTurn) (1, g2)
+            g3^?!p1.hero.mana `shouldBe` 10
+            g3^?!p1.hero.maxMana `shouldBe` 10
+            g3^?!p2.hero.mana `shouldBe` 10
+            g3^?!p2.hero.maxMana `shouldBe` 10
+        it "should decrease when a card is played" $ do
+            let g = buildGame $ do
+                    addPlayers 2
+                    setDeck 1 ["Murloc Raider", "Magma Rager"]
+                    setStartingMana 1 10
+            let g2 = play g playFirstMinionCard
+            g2^?!p1.hero.mana `shouldBe` 9
+            let g3 = play g2 playFirstMinionCard
+            g3^?!p1.hero.mana `shouldBe` 6
+            let g4 = play g3 $ replicateM 2 endTurn
+            g3^?!p1.hero.mana `shouldBe` 10
 
     describe "attack" $ do
         it "should be able to attack hero with minions" $ do
