@@ -12,7 +12,6 @@ module Firestone.Game ( Game(..)
                       , p1
                       , p2
                       , makeGame
-                      , players
                       , active
                       , playerInTurn
                       , endTurn
@@ -71,13 +70,6 @@ playerInTurn f game =
     case game^.turn of 0 -> p1 f game
                        1 -> p2 f game
 
--- TODO: Traversal' Game Player
-players :: State Game [Player]
-players = do
-    p1' <- use p1
-    p2' <- use p2
-    return [p1', p2']
-
 endTurn :: State Game [Event]
 endTurn = do
     turn %= \x -> (x + 1) `mod` 2
@@ -87,6 +79,7 @@ endTurn = do
         zoom hero $ do
             increaseMana
             isSleepy .= False
+    removeDeadMinions
     checkGameOver
     return []
 
@@ -108,7 +101,7 @@ preither getter err = do
 isAttackValid :: (IsCharacter a, IsCharacter b)
               => CharacterLens a -> CharacterLens b -> State Game (Either String Bool)
 isAttackValid a t = do
-    ps <- players
+    ps <- mapM use [p1, p2]
     attacker <- preither a "Invalid attacker"
     target <- preither t "Invalid target"
     return $ and <$> sequence [ C.canAttack <$> attacker
@@ -129,6 +122,7 @@ attack attacker target = do
             g2 <- get
             attacker.health -= (g2^?!target.attackValue)
             attacker.isSleepy .= True
+            removeDeadMinions
             checkGameOver
             return $ Right []
 
@@ -150,6 +144,7 @@ playMinionCard c position = do
             let (minion, gen2) = lookupMinion gen1 (card^.name)
             idGen .= gen2
             playerInTurn.activeMinions %= insertAt position minion
+            removeDeadMinions
             checkGameOver
             return $ Right []
 
@@ -166,6 +161,12 @@ checkGameOver = do
     p1hp <- use (p1.hero.health)
     p2hp <- use (p2.hero.health)
     active .= (p1hp > 0 && p2hp > 0)
+
+removeDeadMinions :: State Game [Event]
+removeDeadMinions = do
+    forM [p1, p2] $ flip zoom $ do
+        activeMinions %= filter (\m -> m^.health > 0)
+    return []
 
 safeHead :: String -> [a] -> Either String a
 safeHead str (x:_) = Right x
