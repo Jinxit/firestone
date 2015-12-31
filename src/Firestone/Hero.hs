@@ -19,6 +19,7 @@ module Firestone.Hero ( Hero(..)
                       ) where
 
 import Firestone.Minion hiding (canAttack)
+import Firestone.Card
 
 import Control.Monad.State
 import Control.Lens

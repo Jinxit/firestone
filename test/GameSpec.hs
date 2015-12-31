@@ -80,7 +80,7 @@ spec = do
             let g3 = play g2 playFirstMinionCard
             g3^.p1.hero.mana `shouldBe` 6
             let g4 = play g3 $ replicateM 2 endTurn
-            g3^.p1.hero.mana `shouldBe` 10
+            g4^.p1.hero.mana `shouldBe` 10
 
     describe "attack" $ do
         it "should be able to attack hero with minions" $ do

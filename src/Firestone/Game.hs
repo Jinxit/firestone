@@ -107,17 +107,17 @@ playMinionCard :: CardLens -> Int -> State Game (Either String [Event])
 playMinionCard c position = do
     maybeCard <- preuse c
     case maybeCard of
-        Nothing   -> return $ Left "Tried to play non-existing minion card"
+        Nothing   -> do
+            return $ Left "Tried to play non-existing minion card"
         Just card -> do
             playerInTurn.hero.mana -= (card^.manaCost)
+            playerInTurn.hand %= filter (/= card)
             return $ Left "bam"
 
 start :: State Game ()
 start = do
     zoom p1 $ do
-        zoom hero $ do
-            mana .= 1
-            maxMana .= 1
+        zoom hero increaseMana
         activeMinions.traversed.isSleepy .= False
         replicateM_ 4 drawCard
     zoom p2 $ replicateM_ 4 drawCard

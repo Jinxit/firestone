@@ -7,6 +7,7 @@
 
 module Firestone.Card ( Type(..)
                       , Card(..)
+                      , HasName(..)
                       , manaCost
                       , makeCard) where
 

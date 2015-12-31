@@ -18,6 +18,8 @@ module Firestone.Minion ( MinionRace(..)
                         , canAttack
                         ) where
 
+import Firestone.Card
+
 import Control.Lens
 
 data MinionRace = Beast
