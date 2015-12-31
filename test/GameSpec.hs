@@ -138,7 +138,7 @@ spec = do
             let g2 = play g $ playFirstMinionCard
             murlocCanAttack g2 `shouldBe` Right False
             let g3 = play g2 $ replicateM_ 2 endTurn
-            murlocCanAttack g3 `shouldBe` Right False
+            murlocCanAttack g3 `shouldBe` Right True
 
         it "can not attack friendly minions" $ do
             let g = buildGame $ do
@@ -188,7 +188,7 @@ spec = do
                     setStartingMana 1 10
             let g2 = play g $ replicateM_ 3 playFirstMinionCard
             length (g2^.p1.hand) `shouldBe` 0
-            length (g2^.p1.activeMinions) `shouldBe` 0
+            length (g2^.p1.activeMinions) `shouldBe` 3
 
 m :: Int -> Traversal' Player Minion
 m i = activeMinions.ix i

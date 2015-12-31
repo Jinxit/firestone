@@ -33,6 +33,7 @@ import Firestone.IdGenerator
 import Firestone.Character hiding (canAttack)
 import qualified Firestone.Character as C
 import Firestone.Card
+import Firestone.Database
 
 import Data.Monoid
 import Data.Maybe
@@ -131,6 +132,11 @@ attack attacker target = do
             attacker.isSleepy .= True
             return $ Left "boom"
 
+insertAt :: Int -> a -> [a] -> [a]
+insertAt i x xs = ls ++ (x:rs)
+  where
+    (ls, rs) = splitAt i xs
+
 playMinionCard :: CardLens -> Int -> State Game (Either String [Event])
 playMinionCard c position = do
     maybeCard <- preuse c
@@ -140,6 +146,10 @@ playMinionCard c position = do
         Just card -> do
             playerInTurn.hero.mana -= (card^.manaCost)
             playerInTurn.hand %= filter (/= card)
+            gen1 <- use idGen
+            let (minion, gen2) = lookupMinion gen1 (card^.name)
+            idGen .= gen2
+            playerInTurn.activeMinions %= insertAt position minion
             return $ Left "bam"
 
 start :: State Game ()
