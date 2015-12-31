@@ -13,8 +13,8 @@ module Firestone.Minion ( MinionRace(..)
                         , HasHealth(..)
                         , HasMaxHealth(..)
                         , HasAttackValue(..)
+                        , HasIsSleepy(..)
                         , makeMinion
-                        , isSleepy
                         , canAttack
                         ) where
 

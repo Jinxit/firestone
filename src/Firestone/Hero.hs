@@ -11,6 +11,7 @@ module Firestone.Hero ( Hero(..)
                       , HasHealth(..)
                       , HasMaxHealth(..)
                       , HasAttackValue(..)
+                      , HasIsSleepy(..)
                       , mana
                       , maxMana
                       , makeHero
@@ -31,6 +32,7 @@ data Hero = Hero { heroUuid :: String
                  , heroMana :: Int
                  , heroMaxMana :: Int
                  , heroAttackValue :: Int
+                 , heroIsSleepy :: Bool
                  } deriving (Show)
 
 makeFields ''Hero
@@ -39,7 +41,7 @@ instance Eq Hero where
     (==) a b = a^.uuid == b^.uuid
 
 makeHero :: String -> String -> Int -> Int -> Hero
-makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana 0
+makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana 0 False
 
 increaseMana :: State Hero ()
 increaseMana = do

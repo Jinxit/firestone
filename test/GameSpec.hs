@@ -88,7 +88,7 @@ spec = do
                     setActiveMinions 1 ["Murloc Raider"]
             g^.p1.hero.health `shouldBe` 20
             evalState (isAttackValid (p1.m 0) (p2.hero)) g `shouldBe` Right True
-            let g2 = play g $ simpleAttackHero p1 p2 0
+            let g2 = play g $ attack (p1.m 0) (p2.hero)
             g2^.p2.hero.health `shouldBe` 18
 
         it "can only attack on player's turn" $ do
@@ -109,7 +109,7 @@ spec = do
             simpleCanAttack g p1 1 `shouldBe` True
             simpleCanAttack g p2 0 `shouldBe` False
             simpleCanAttack g p2 1 `shouldBe` False
-            let g2 = play g $ simpleAttackHero p1 p2 0
+            let g2 = play g $ attack (p1.m 0) (p2.hero)
             simpleCanAttack g2 p1 0 `shouldBe` False
             simpleCanAttack g2 p1 1 `shouldBe` True
             simpleCanAttack g2 p2 0 `shouldBe` False
@@ -119,17 +119,17 @@ spec = do
             simpleCanAttack g3 p1 1 `shouldBe` False
             simpleCanAttack g3 p2 0 `shouldBe` True
             simpleCanAttack g3 p2 1 `shouldBe` True
-            let g4 = play g3 $ simpleAttackHero p2 p1 0
-            simpleCanAttack g4 p1 0 `shouldBe` True
-            simpleCanAttack g4 p1 1 `shouldBe` True
+            let g4 = play g3 $ attack (p2.m 0) (p1.hero)
+            simpleCanAttack g4 p1 0 `shouldBe` False
+            simpleCanAttack g4 p1 1 `shouldBe` False
             simpleCanAttack g4 p2 0 `shouldBe` False
-            simpleCanAttack g4 p2 1 `shouldBe` False
+            simpleCanAttack g4 p2 1 `shouldBe` True
 
         it "should produce error when attacking twice per turn with same minion" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider"]
-            let g2 = play g (simpleAttackHero p1 p2 0)
-            evalState (simpleAttackHero p1 p2 0) g2 `shouldSatisfy` isLeft
+            let g2 = play g $ attack (p1.m 0) (p2.hero)
+            evalState (attack (p1.m 0) (p2.hero)) g2 `shouldSatisfy` isLeft
 
         it "can not attack with just played minions" $ do
             let g = buildGame $ do
@@ -150,9 +150,9 @@ spec = do
                     setActiveMinions 1 (replicate 4 "Murloc Raider")
                     setActiveMinions 2 ["Oasis Snapjaw"]
             let g2 = play g $ do
-                    replicateM 3 $ simpleAttack p1 p2 0 0
+                    replicateM 3 $ attack (p1.m 0) (p2.m 0)
                     endTurn
-                    simpleAttack p2 p1 0 0
+                    attack (p2.m 0) (p1.m 0)
             length (g2^.p1.activeMinions) `shouldBe` 0
             length (g2^.p2.activeMinions) `shouldBe` 0
 
@@ -161,10 +161,10 @@ spec = do
                     setActiveMinions 1 ["Oasis Snapjaw", "Oasis Snapjaw"]
                     setActiveMinions 2 ["Oasis Snapjaw"]
             let g2 = play g $ do
-                    simpleAttack p1 p2 0 0
-                    simpleAttack p1 p2 1 0
+                    attack (p1.m 0) (p2.m 0)
+                    attack (p1.m 1) (p2.m 0)
                     endTurn
-                    simpleAttack p2 p1 0 0
+                    attack (p2.m 0) (p1.m 0)
             length (g2^.p1.activeMinions) `shouldBe` 2
             length (g2^.p2.activeMinions) `shouldBe` 1
             g2^?!p1.m 0.health `shouldBe` 3
@@ -177,7 +177,7 @@ spec = do
                     setActiveMinions 1 ["Magma Rager"]
                     setMaxHealth 2 11
             g^.active `shouldBe` True
-            let g2 = play g $ simpleAttackHero p1 p2 0
+            let g2 = play g $ attack (p1.m 0) (p2.hero)
             g2^.p2.hero.health `shouldBe` -4
             g2^.active `shouldBe` False
 
@@ -192,20 +192,6 @@ spec = do
 
 m :: Int -> Traversal' Player Minion
 m i = activeMinions.ix i
-
-simpleAttack :: PlayerLens -> PlayerLens -> Int -> Int -> State Game (Either String [Event])
-simpleAttack attacker target mi1 mi2 = do
-    game <- get
-    let attackerId = game^.attacker.m mi1.uuid
-    let targetId = game^.target.m mi2.uuid
-    attack attackerId targetId
-
-simpleAttackHero :: PlayerLens -> PlayerLens -> Int -> State Game (Either String [Event])
-simpleAttackHero attacker target mi = do
-    game <- get
-    let attackerId = game^.attacker.m mi.uuid
-    let targetId = game^.target.hero.uuid
-    attack attackerId targetId
 
 simpleCanAttack :: Game -> PlayerLens -> Int -> Bool
 simpleCanAttack game player mi = evalState (canAttack player (game^?!player.m mi)) game

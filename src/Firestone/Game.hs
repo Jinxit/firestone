@@ -83,7 +83,9 @@ endTurn = do
     zoom playerInTurn $ do
         activeMinions.traversed.isSleepy .= False
         drawCard
-        zoom hero increaseMana
+        zoom hero $ do
+            increaseMana
+            isSleepy .= False
     return []
 
 canAttack :: PlayerLens -> Minion -> State Game Bool
@@ -108,9 +110,22 @@ isAttackValid a t = do
                                      <*> (ownerOf ps <$> target)
                               ]
 
-attack :: String -> String -> State Game (Either String [Event])
-attack attackerId targetId = do
-    return $ Left "boom"
+attack :: (IsCharacter a, IsCharacter b)
+       => CharacterLens a -> CharacterLens b -> State Game (Either String [Event])
+attack attacker target = do
+    valid <- isAttackValid attacker target
+    case valid of
+        Left err    -> return $ Left err
+        Right False -> return $ Left "Attack is not valid"
+        Right True  -> do
+            g1 <- get
+            let attackerDamage = g1^?!attacker.attackValue
+            target.health -= attackerDamage
+            g2 <- get
+            let targetDamage = g2^?!target.attackValue
+            attacker.health -= targetDamage
+            attacker.isSleepy .= True
+            return $ Left "boom"
 
 playMinionCard :: CardLens -> Int -> State Game (Either String [Event])
 playMinionCard c position = do
@@ -131,28 +146,9 @@ start = do
         replicateM_ 4 drawCard
     zoom p2 $ replicateM_ 4 drawCard
 
-sameUuid :: HasUuid a String => String -> a -> Bool
-sameUuid charId char = charId == (char^.uuid)
-
 safeHead :: String -> [a] -> Either String a
 safeHead str (x:_) = Right x
 safeHead str _     = Left str
-
-getHero :: String -> [Player] -> Either String Hero
-getHero charId ps = safeHead ("No hero with UUID " ++ charId) match
-  where
-    match = filter (sameUuid charId) $ map (view hero) ps
-
-getMinion :: String -> [Player] -> Either String Minion
-getMinion charId ps = safeHead ("No minion with UUID " ++ charId) match
-  where
-    match = filter (sameUuid charId) $ concatMap (view activeMinions) ps
-
-getCharacter :: String -> [Player] -> Either String Character
-getCharacter charId ps = (CHero <$> h) <-> (CMinion <$> m)
-  where
-    h = getHero charId ps
-    m = getMinion charId ps
 
 ownerOf :: IsCharacter a => [Player] -> a -> Either String Player
 ownerOf ps c = safeHead ("Ownerless character found: " ++ (c^.uuid)) match
