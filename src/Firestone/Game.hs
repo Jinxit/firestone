@@ -36,6 +36,7 @@ import Firestone.Card
 
 import Data.Monoid
 import Data.Maybe
+import Data.Either.Utils
 import Control.Monad.State
 import Control.Applicative
 import Control.Lens
@@ -51,6 +52,7 @@ makeFields ''Game
 
 type PlayerLens = Lens' Game Player
 type CardLens = Traversal' Game Card
+type CharacterLens a = Traversal' Game a
 
 (<->) :: Either a b -> Either a b -> Either a b
 Left x  <-> Right y = Right y
@@ -90,18 +92,25 @@ canAttack p m = do
     inTurn <- use playerInTurn
     return $ M.canAttack m && attacker == inTurn
 
-isAttackValid :: String -> String -> State Game (Either String Bool)
-isAttackValid attackerId targetId = do
+preither :: MonadState s m => Getting (First a) s a -> b -> m (Either b a)
+preither getter err = do
+    maybeValue <- preuse getter
+    return $ maybeToEither err maybeValue
+
+isAttackValid :: (IsCharacter a, IsCharacter b)
+              => CharacterLens a -> CharacterLens b -> State Game (Either String Bool)
+isAttackValid a t = do
     ps <- players
-    let attacker = getCharacter attackerId ps
-    let target = getCharacter targetId ps
+    attacker <- preither a "Invalid attacker"
+    target <- preither t "Invalid target"
     return $ and <$> sequence [ C.canAttack <$> attacker
                               , (/=) <$> (ownerOf ps <$> attacker)
                                      <*> (ownerOf ps <$> target)
                               ]
 
 attack :: String -> String -> State Game (Either String [Event])
-attack attackerId targetId = return $ Left "boom"
+attack attackerId targetId = do
+    return $ Left "boom"
 
 playMinionCard :: CardLens -> Int -> State Game (Either String [Event])
 playMinionCard c position = do
@@ -145,13 +154,9 @@ getCharacter charId ps = (CHero <$> h) <-> (CMinion <$> m)
     h = getHero charId ps
     m = getMinion charId ps
 
-ownerOf :: [Player] -> Character -> Either String Player
-ownerOf ps (CMinion m) = safeHead ("Ownerless minion found: " ++ (m^.uuid)) match
+ownerOf :: IsCharacter a => [Player] -> a -> Either String Player
+ownerOf ps c = safeHead ("Ownerless character found: " ++ (c^.uuid)) match
   where
-    ownsMinion p = m `elem` (p^.activeMinions)
-    match = filter ownsMinion ps
-
-ownerOf ps (CHero h) = safeHead ("Ownerless hero found: " ++ (h^.uuid)) match
-  where
-    ownsHero p = h == (p^.hero)
-    match = filter ownsHero ps
+    ownsMinion p = any (\m -> m^.uuid == c^.uuid) (p^.activeMinions)
+    ownsHero p = (c^.uuid) == (p^.hero^.uuid)
+    match = filter (\p -> (ownsMinion p) || (ownsHero p)) ps

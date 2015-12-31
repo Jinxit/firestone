@@ -32,7 +32,7 @@ data Card = Card { cardUuid :: String
 makeFields ''Card
 
 instance Eq Card where
-    (==) a b = a^.uuid  == b^.uuid
+    (==) a b = a^.uuid == b^.uuid
 
 makeCard :: String -> String -> Int -> Maybe Int -> Maybe Int -> Type -> String -> Bool -> Card
 makeCard cId cName cMana cAttack cHealth cType cDesc cIsTargeting =

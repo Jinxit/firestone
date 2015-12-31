@@ -87,6 +87,7 @@ spec = do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider"]
             g^.p1.hero.health `shouldBe` 20
+            evalState (isAttackValid (p1.m 0) (p2.hero)) g `shouldBe` Right True
             let g2 = play g $ simpleAttackHero p1 p2 0
             g2^.p2.hero.health `shouldBe` 18
 
@@ -142,9 +143,7 @@ spec = do
         it "can not attack friendly minions" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider", "Magma Rager"]
-            let murlocId = g^.p1.m 0.uuid
-            let magmaId = g^.p1.m 1.uuid
-            evalState (isAttackValid murlocId magmaId) g `shouldBe` Right False
+            evalState (isAttackValid (p1.m 0) (p1.m 1)) g `shouldBe` Right False
 
         it "should remove dead minions" $ do
             let g = buildGame $ do
@@ -173,7 +172,7 @@ spec = do
             g2^?!p2.m 0.health `shouldBe` 1
 
     describe "hero" $ do
-        it "should die when health <= 1" $ do
+        it "should end game when health <= 1" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Magma Rager"]
                     setMaxHealth 2 11

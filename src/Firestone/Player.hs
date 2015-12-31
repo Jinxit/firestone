@@ -33,7 +33,7 @@ data Player = Player { playerUuid :: String
 makeFields ''Player
 
 instance Eq Player where
-    (==) a b = a^.uuid  == b^.uuid
+    (==) a b = a^.uuid == b^.uuid
 
 makePlayer :: String -> Hero -> Player
 makePlayer pId pHero = Player pId pHero [] [] (Deck []) 1

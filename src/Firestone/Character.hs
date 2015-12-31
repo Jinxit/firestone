@@ -37,18 +37,21 @@ instance HasAttackValue Character Int where
     attackValue f (CMinion m) = CMinion <$> attackValue f m
     attackValue f (CHero h) = CHero <$> attackValue f h
 
-class ( HasUuid s String
-      , HasName s String
-      , HasHealth s Int
-      , HasMaxHealth s Int
-      ) => IsCharacter s
+instance Eq Character where
+    (==) a b = a^.uuid == b^.uuid
 
-instance IsCharacter M.Minion
-instance IsCharacter H.Hero
+class ( HasUuid c String
+      , HasName c String
+      , HasHealth c Int
+      , HasMaxHealth c Int
+      , HasAttackValue c Int
+      ) => IsCharacter c where
+    canAttack :: c -> Bool
 
-damage :: IsCharacter a => Int -> State a ()
+instance IsCharacter M.Minion where
+    canAttack = M.canAttack
+instance IsCharacter H.Hero where
+    canAttack = H.canAttack
+
+damage :: IsCharacter c => Int -> State c ()
 damage d = health -= d
-
-canAttack :: Character -> Bool
-canAttack (CMinion m) = M.canAttack m
-canAttack (CHero h) = H.canAttack h
