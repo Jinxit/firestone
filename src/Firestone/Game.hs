@@ -7,6 +7,10 @@
 {-# LANGUAGE FlexibleContexts       #-}
 
 module Firestone.Game ( Game(..)
+                      , PlayerLens(..)
+                      , CardLens(..)
+                      , p1
+                      , p2
                       , makeGame
                       , players
                       , active
@@ -36,7 +40,8 @@ import Control.Monad.State
 import Control.Applicative
 import Control.Lens
 
-data Game = Game { gamePlayers :: [Player]
+data Game = Game { gameP1 :: Player
+                 , gameP2 :: Player
                  , gameTurn :: Int
                  , gameIdGen :: IdGenerator
                  , gameActive :: Bool
@@ -44,40 +49,50 @@ data Game = Game { gamePlayers :: [Player]
 
 makeFields ''Game
 
+type PlayerLens = Lens' Game Player
+type CardLens = Traversal' Game Card
+
 (<->) :: Either a b -> Either a b -> Either a b
 Left x  <-> Right y = Right y
 Left x  <-> Left y  = Left x
 Right x <-> _       = Right x
 
-makeGame :: [Player] -> Int -> IdGenerator -> Game
-makeGame ps turn idGen = execState start (Game ps turn idGen True)
+makeGame :: Player -> Player -> Int -> IdGenerator -> Game
+makeGame p1 p2 turn idGen = execState start (Game p1 p2 turn idGen True)
 
 play :: Game -> State Game a -> Game
 play = flip execState
 
-playerInTurn :: State Game Player
-playerInTurn = do
-    game <- get
-    return $ game^?!players.ix (game^.turn)
+playerInTurn :: PlayerLens
+playerInTurn f game =
+    case game^.turn of 0 -> p1 f game
+                       1 -> p2 f game
+
+-- TODO: Traversal' Game Player
+players :: State Game [Player]
+players = do
+    p1' <- use p1
+    p2' <- use p2
+    return [p1', p2']
 
 endTurn :: State Game [Event]
 endTurn = do
-    playerCount <- uses players length
-    t <- turn <%= \x -> (x + 1) `mod` playerCount
-    zoom (players.ix t) $ do
+    turn %= \x -> (x + 1) `mod` 2
+    zoom playerInTurn $ do
         activeMinions.traversed.isSleepy .= False
         drawCard
         zoom hero increaseMana
     return []
 
-canAttack :: Player -> Minion -> State Game Bool
+canAttack :: PlayerLens -> Minion -> State Game Bool
 canAttack p m = do
-    currentPlayer <- playerInTurn
-    return $ M.canAttack m && currentPlayer == p
+    attacker <- use p
+    inTurn <- use playerInTurn
+    return $ M.canAttack m && attacker == inTurn
 
 isAttackValid :: String -> String -> State Game (Either String Bool)
 isAttackValid attackerId targetId = do
-    ps <- use players
+    ps <- players
     let attacker = getCharacter attackerId ps
     let target = getCharacter targetId ps
     return $ and <$> sequence [ C.canAttack <$> attacker
@@ -85,20 +100,27 @@ isAttackValid attackerId targetId = do
                                      <*> (ownerOf ps <$> target)
                               ]
 
-attack :: Player -> String -> String -> State Game (Either String [Event])
-attack player attackerId targetId = return $ Left "boom"
+attack :: String -> String -> State Game (Either String [Event])
+attack attackerId targetId = return $ Left "boom"
 
-playMinionCard :: Player -> Card -> Int -> State Game (Either String [Event])
-playMinionCard p c i = return $ Left "bam"
+playMinionCard :: CardLens -> Int -> State Game (Either String [Event])
+playMinionCard c position = do
+    maybeCard <- preuse c
+    case maybeCard of
+        Nothing   -> return $ Left "Tried to play non-existing minion card"
+        Just card -> do
+            playerInTurn.hero.mana -= (card^.manaCost)
+            return $ Left "bam"
 
 start :: State Game ()
 start = do
-    zoom (players.ix 0) $ do
+    zoom p1 $ do
         zoom hero $ do
             mana .= 1
             maxMana .= 1
         activeMinions.traversed.isSleepy .= False
-    zoom (players.traversed) $ replicateM_ 4 drawCard
+        replicateM_ 4 drawCard
+    zoom p2 $ replicateM_ 4 drawCard
 
 sameUuid :: HasUuid a String => String -> a -> Bool
 sameUuid charId char = charId == (char^.uuid)

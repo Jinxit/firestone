@@ -7,6 +7,7 @@
 
 module Firestone.Card ( Type(..)
                       , Card(..)
+                      , manaCost
                       , makeCard) where
 
 import Control.Lens

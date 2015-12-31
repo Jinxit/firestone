@@ -6,8 +6,7 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.GameBuilder ( buildGame
-                             , addPlayer
-                             , addPlayers
+                             , baseGame
                              , setMaxHealth
                              , setStartingMana
                              , setActiveMinions
@@ -26,67 +25,65 @@ import Firestone.Database
 import Control.Monad.State
 import Control.Lens
 
-data GameBuilder = GameBuilder { gameBuilderPlayers :: [Player]
+data GameBuilder = GameBuilder { gameBuilderP1 :: Player
+                               , gameBuilderP2 :: Player
                                , gameBuilderIdGen :: IdGenerator
                                }
 
 makeFields ''GameBuilder
 
-buildGame :: State GameBuilder Game -> Game
-buildGame buildActions =
-    evalState buildActions (GameBuilder [] makeIdGenerator)
-
-addPlayer :: String -> State GameBuilder Game
-addPlayer heroName = do
+buildGame :: State GameBuilder a -> Game
+buildGame buildActions = flip evalState makeGameBuilder $ do
+    buildActions
     gb <- get
-    let (hId, _, idGen2) = create (gb^.idGen) heroName
-    let hero = makeHero hId heroName 30 0
-    let (pId, _, idGen3) = create idGen2 "player"
-    let player = makePlayer pId hero
-    players %= (|> player)
-    idGen .= idGen3
-    build
+    return $ makeGame (gb^.p1) (gb^.p2) 0 (gb^.idGen)
 
-addPlayers :: Int -> State GameBuilder Game
-addPlayers n = replicateM_ n (addPlayer "hero") >> build
+baseGame :: Game
+baseGame = buildGame $ return ()
 
-playerAt :: Int -> Traversal' GameBuilder Player
-playerAt i = players.ix (i - 1)
+makeGameBuilder :: GameBuilder
+makeGameBuilder = GameBuilder player1 player2 makeIdGenerator
+  where
+    idGen1 = makeIdGenerator
+    (player1, idGen2) = createPlayer idGen1
+    (player2, idGen3) = createPlayer idGen2
 
-heroAt :: Int -> Traversal' GameBuilder Hero
+createPlayer :: IdGenerator -> (Player, IdGenerator)
+createPlayer idGen1 = (makePlayer pId hero, idGen3)
+  where
+    (hId, _, idGen2) = create idGen1 "hero"
+    hero = makeHero hId "hero" 30 0
+    (pId, _, idGen3) = create idGen2 "player"
+
+playerAt :: Int -> Lens' GameBuilder Player
+playerAt i f gb = case i of 1 -> p1 f gb
+                            2 -> p2 f gb
+
+heroAt :: Int -> Lens' GameBuilder Hero
 heroAt i = playerAt i.hero
 
-setMaxHealth :: Int -> Int -> State GameBuilder Game
+setMaxHealth :: Int -> Int -> State GameBuilder ()
 setMaxHealth i newHealth = do
     zoom (heroAt i) $ do
         health .= newHealth
         maxHealth .= newHealth
-    build
 
-setStartingMana :: Int -> Int -> State GameBuilder Game
+setStartingMana :: Int -> Int -> State GameBuilder ()
 setStartingMana i newMana = do
     zoom (heroAt i) $ do
         mana .= newMana
         maxMana .= newMana
-    build
 
-setActiveMinions :: Int -> [String] -> State GameBuilder Game
+setActiveMinions :: Int -> [String] -> State GameBuilder ()
 setActiveMinions i names = do
     gb <- get
     let (newMinions, newGen) = lookupMinions (gb^.idGen) names
     playerAt i.activeMinions .= newMinions
     idGen .= newGen
-    build
 
-setDeck :: Int -> [String] -> State GameBuilder Game
+setDeck :: Int -> [String] -> State GameBuilder ()
 setDeck i names = do
     gb <- get
     let (newCards, newGen) = lookupCards (gb^.idGen) names
     playerAt i.deck.cards .= newCards
     idGen .= newGen
-    build
-
-build :: State GameBuilder Game
-build = do
-    gb <- get
-    return $ makeGame (gb^.players) 0 (gb^.idGen)
