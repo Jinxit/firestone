@@ -13,6 +13,7 @@ import Firestone.Event
 
 import Control.Monad.State
 import Control.Lens
+import Control.Exception
 import Data.Either
 
 import Test.Hspec
@@ -87,7 +88,7 @@ spec = do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider"]
             g^.p1.hero.health `shouldBe` 20
-            evalState (isAttackValid (p1.m 0) (p2.hero)) g `shouldBe` Right True
+            evalState (isAttackValid (p1.m 0) (p2.hero)) g `shouldBe` True
             let g2 = play g $ attack (p1.m 0) (p2.hero)
             g2^.p2.hero.health `shouldBe` 18
 
@@ -95,55 +96,55 @@ spec = do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider"]
                     setActiveMinions 2 ["Murloc Raider"]
-            evalState (canAttack p1 (p1.m 0)) g `shouldBe` Right True
-            evalState (canAttack p2 (p2.m 0)) g `shouldBe` Right False
+            evalState (canAttack p1 (p1.m 0)) g `shouldBe` True
+            evalState (canAttack p2 (p2.m 0)) g `shouldBe` False
             let g2 = play g endTurn
-            evalState (canAttack p1 (p1.m 0)) g2 `shouldBe` Right False
-            evalState (canAttack p2 (p2.m 0)) g2 `shouldBe` Right True
+            evalState (canAttack p1 (p1.m 0)) g2 `shouldBe` False
+            evalState (canAttack p2 (p2.m 0)) g2 `shouldBe` True
 
         it "can only attack once per minion per turn" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider", "Murloc Raider"]
                     setActiveMinions 2 ["Murloc Raider", "Murloc Raider"]
-            evalState (canAttack p1 (p1.m 0)) g `shouldBe` Right True
-            evalState (canAttack p1 (p1.m 1)) g `shouldBe` Right True
-            evalState (canAttack p2 (p2.m 0)) g `shouldBe` Right False
-            evalState (canAttack p2 (p2.m 1)) g `shouldBe` Right False
+            evalState (canAttack p1 (p1.m 0)) g `shouldBe` True
+            evalState (canAttack p1 (p1.m 1)) g `shouldBe` True
+            evalState (canAttack p2 (p2.m 0)) g `shouldBe` False
+            evalState (canAttack p2 (p2.m 1)) g `shouldBe` False
             let g2 = play g $ attack (p1.m 0) (p2.hero)
-            evalState (canAttack p1 (p1.m 0)) g2 `shouldBe` Right False
-            evalState (canAttack p1 (p1.m 1)) g2 `shouldBe` Right True
-            evalState (canAttack p2 (p2.m 0)) g2 `shouldBe` Right False
-            evalState (canAttack p2 (p2.m 1)) g2 `shouldBe` Right False
+            evalState (canAttack p1 (p1.m 0)) g2 `shouldBe` False
+            evalState (canAttack p1 (p1.m 1)) g2 `shouldBe` True
+            evalState (canAttack p2 (p2.m 0)) g2 `shouldBe` False
+            evalState (canAttack p2 (p2.m 1)) g2 `shouldBe` False
             let g3 = play g2 endTurn
-            evalState (canAttack p1 (p1.m 0)) g3 `shouldBe` Right False
-            evalState (canAttack p1 (p1.m 1)) g3 `shouldBe` Right False
-            evalState (canAttack p2 (p2.m 0)) g3 `shouldBe` Right True
-            evalState (canAttack p2 (p2.m 1)) g3 `shouldBe` Right True
+            evalState (canAttack p1 (p1.m 0)) g3 `shouldBe` False
+            evalState (canAttack p1 (p1.m 1)) g3 `shouldBe` False
+            evalState (canAttack p2 (p2.m 0)) g3 `shouldBe` True
+            evalState (canAttack p2 (p2.m 1)) g3 `shouldBe` True
             let g4 = play g3 $ attack (p2.m 0) (p1.hero)
-            evalState (canAttack p1 (p1.m 0)) g4 `shouldBe` Right False
-            evalState (canAttack p1 (p1.m 1)) g4 `shouldBe` Right False
-            evalState (canAttack p2 (p2.m 0)) g4 `shouldBe` Right False
-            evalState (canAttack p2 (p2.m 1)) g4 `shouldBe` Right True
+            evalState (canAttack p1 (p1.m 0)) g4 `shouldBe` False
+            evalState (canAttack p1 (p1.m 1)) g4 `shouldBe` False
+            evalState (canAttack p2 (p2.m 0)) g4 `shouldBe` False
+            evalState (canAttack p2 (p2.m 1)) g4 `shouldBe` True
 
         it "should produce error when attacking twice per turn with same minion" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider"]
             let g2 = play g $ attack (p1.m 0) (p2.hero)
-            evalState (attack (p1.m 0) (p2.hero)) g2 `shouldSatisfy` isLeft
+            evaluate (play g2 $ attack (p1.m 0) (p2.hero)) `shouldThrow` anyErrorCall
 
         it "can not attack with just played minions" $ do
             let g = buildGame $ do
                     setDeck 1 ["Murloc Raider"]
             let murlocCanAttack gn = evalState (canAttack p1 (p1.m 0)) gn
             let g2 = play g $ playFirstMinionCard
-            murlocCanAttack g2 `shouldBe` Right False
+            murlocCanAttack g2 `shouldBe` False
             let g3 = play g2 $ replicateM_ 2 endTurn
-            murlocCanAttack g3 `shouldBe` Right True
+            murlocCanAttack g3 `shouldBe` True
 
         it "can not attack friendly minions" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider", "Magma Rager"]
-            evalState (isAttackValid (p1.m 0) (p1.m 1)) g `shouldBe` Right False
+            evalState (isAttackValid (p1.m 0) (p1.m 1)) g `shouldBe` False
 
         it "should remove dead minions" $ do
             let g = buildGame $ do
@@ -193,7 +194,7 @@ spec = do
 m :: Int -> Traversal' Player Minion
 m i = activeMinions.ix i
 
-playFirstMinionCard :: State Game (Either String [Event])
+playFirstMinionCard :: State Game [Event]
 playFirstMinionCard = do
     p <- use playerInTurn
     playMinionCard (playerInTurn.hand.ix 0) (length (p^.activeMinions))

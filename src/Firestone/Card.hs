@@ -7,6 +7,7 @@
 
 module Firestone.Card ( Type(..)
                       , Card(..)
+                      , HasUuid(..)
                       , HasName(..)
                       , manaCost
                       , makeCard) where

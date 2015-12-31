@@ -40,6 +40,7 @@ import Data.Either.Utils
 import Control.Monad.State
 import Control.Applicative
 import Control.Lens
+import Control.Exception.Base
 
 data Game = Game { gameP1 :: Player
                  , gameP2 :: Player
@@ -70,6 +71,9 @@ playerInTurn f game =
     case game^.turn of 0 -> p1 f game
                        1 -> p2 f game
 
+players :: State Game [Player]
+players = mapM use [p1, p2]
+
 endTurn :: State Game [Event]
 endTurn = do
     turn %= \x -> (x + 1) `mod` 2
@@ -84,39 +88,37 @@ endTurn = do
     return []
 
 canAttack :: IsCharacter a
-          => PlayerLens -> CharacterLens a -> State Game (Either String Bool)
+          => PlayerLens -> CharacterLens a -> State Game Bool
 canAttack p c = do
     player <- use p
     inTurn <- use playerInTurn
-    character <- preither c "Invalid attacker"
-    return $ and <$> sequence [ C.canAttack <$> character
-                              , Right (player == inTurn)
-                              ]
+    character <- prerror c "Invalid attacker"
+    return $ C.canAttack character
+          && player == inTurn
 
-preither :: MonadState s m => Getting (First a) s a -> b -> m (Either b a)
-preither getter err = do
+prerror :: MonadState s m => Getting (First a) s a -> String -> m a
+prerror getter err = do
     maybeValue <- preuse getter
-    return $ maybeToEither err maybeValue
+    case maybeValue of
+        Just x  -> return x
+        Nothing -> error err
 
 isAttackValid :: (IsCharacter a, IsCharacter b)
-              => CharacterLens a -> CharacterLens b -> State Game (Either String Bool)
+              => CharacterLens a -> CharacterLens b -> State Game Bool
 isAttackValid a t = do
-    ps <- mapM use [p1, p2]
-    attacker <- preither a "Invalid attacker"
-    target <- preither t "Invalid target"
-    return $ and <$> sequence [ C.canAttack <$> attacker
-                              , (/=) <$> (ownerOf ps <$> attacker)
-                                     <*> (ownerOf ps <$> target)
-                              ]
+    ps <- players
+    attacker <- prerror a "Invalid attacker"
+    target <- prerror t "Invalid target"
+    return $ C.canAttack attacker
+          && (ownerOf ps attacker) /= (ownerOf ps target)
 
 attack :: (IsCharacter a, IsCharacter b)
-       => CharacterLens a -> CharacterLens b -> State Game (Either String [Event])
+       => CharacterLens a -> CharacterLens b -> State Game [Event]
 attack attacker target = do
     valid <- isAttackValid attacker target
     case valid of
-        Left err    -> return $ Left err
-        Right False -> return $ Left "Attack is not valid"
-        Right True  -> do
+        False -> error "Attack is not valid"
+        True  -> do
             g1 <- get
             target.health -= (g1^?!attacker.attackValue)
             g2 <- get
@@ -124,20 +126,23 @@ attack attacker target = do
             attacker.isSleepy .= True
             removeDeadMinions
             checkGameOver
-            return $ Right []
+            return $ []
 
 insertAt :: Int -> a -> [a] -> [a]
 insertAt i x xs = ls ++ (x:rs)
   where
     (ls, rs) = splitAt i xs
 
-playMinionCard :: CardLens -> Int -> State Game (Either String [Event])
+playMinionCard :: CardLens -> Int -> State Game [Event]
 playMinionCard c position = do
     maybeCard <- preuse c
     case maybeCard of
         Nothing   -> do
-            return $ Left "Tried to play non-existing minion card"
+            error "Tried to play non-existing minion card"
         Just card -> do
+            p <- use playerInTurn
+            ps <- players
+            assert (p == (ownerOf ps card)) $ return ()
             playerInTurn.hero.mana -= (card^.manaCost)
             playerInTurn.hand %= filter (/= card)
             gen1 <- use idGen
@@ -146,7 +151,7 @@ playMinionCard c position = do
             playerInTurn.activeMinions %= insertAt position minion
             removeDeadMinions
             checkGameOver
-            return $ Right []
+            return []
 
 start :: State Game ()
 start = do
@@ -168,13 +173,15 @@ removeDeadMinions = do
         activeMinions %= filter (\m -> m^.health > 0)
     return []
 
-safeHead :: String -> [a] -> Either String a
-safeHead str (x:_) = Right x
-safeHead str _     = Left str
-
-ownerOf :: IsCharacter a => [Player] -> a -> Either String Player
-ownerOf ps c = safeHead ("Ownerless character found: " ++ (c^.uuid)) match
+ownerOf :: HasUuid a String => [Player] -> a -> Player
+ownerOf ps u = case length match of
+    0         -> error ("Ownerless thing found: " ++ (u^.uuid))
+    otherwise -> head match
   where
-    ownsMinion p = any (\m -> m^.uuid == c^.uuid) (p^.activeMinions)
-    ownsHero p = (c^.uuid) == (p^.hero^.uuid)
-    match = filter (\p -> (ownsMinion p) || (ownsHero p)) ps
+    ownsMinion p = any (\m -> m^.uuid == u^.uuid) (p^.activeMinions)
+    ownsHero p = (u^.uuid) == (p^.hero^.uuid)
+    ownsCard p = any (\c -> c^.uuid == u^.uuid) (p^.hand)
+    match = filter (\p -> ownsMinion p
+                       || ownsHero p
+                       || ownsCard p
+                   ) ps
