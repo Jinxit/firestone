@@ -87,6 +87,7 @@ endTurn = do
         zoom hero $ do
             increaseMana
             isSleepy .= False
+    checkGameOver
     return []
 
 canAttack :: IsCharacter a
@@ -124,13 +125,12 @@ attack attacker target = do
         Right False -> return $ Left "Attack is not valid"
         Right True  -> do
             g1 <- get
-            let attackerDamage = g1^?!attacker.attackValue
-            target.health -= attackerDamage
+            target.health -= (g1^?!attacker.attackValue)
             g2 <- get
-            let targetDamage = g2^?!target.attackValue
-            attacker.health -= targetDamage
+            attacker.health -= (g2^?!target.attackValue)
             attacker.isSleepy .= True
-            return $ Left "boom"
+            checkGameOver
+            return $ Right []
 
 insertAt :: Int -> a -> [a] -> [a]
 insertAt i x xs = ls ++ (x:rs)
@@ -150,7 +150,8 @@ playMinionCard c position = do
             let (minion, gen2) = lookupMinion gen1 (card^.name)
             idGen .= gen2
             playerInTurn.activeMinions %= insertAt position minion
-            return $ Left "bam"
+            checkGameOver
+            return $ Right []
 
 start :: State Game ()
 start = do
@@ -159,6 +160,12 @@ start = do
         activeMinions.traversed.isSleepy .= False
         replicateM_ 4 drawCard
     zoom p2 $ replicateM_ 4 drawCard
+
+checkGameOver :: State Game ()
+checkGameOver = do
+    p1hp <- use (p1.hero.health)
+    p2hp <- use (p2.hero.health)
+    active .= (p1hp > 0 && p2hp > 0)
 
 safeHead :: String -> [a] -> Either String a
 safeHead str (x:_) = Right x
