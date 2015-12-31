@@ -88,11 +88,15 @@ endTurn = do
             isSleepy .= False
     return []
 
-canAttack :: PlayerLens -> Minion -> State Game Bool
-canAttack p m = do
-    attacker <- use p
+canAttack :: IsCharacter a
+          => PlayerLens -> CharacterLens a -> State Game (Either String Bool)
+canAttack p c = do
+    player <- use p
     inTurn <- use playerInTurn
-    return $ M.canAttack m && attacker == inTurn
+    character <- preither c "Invalid attacker"
+    return $ and <$> sequence [ C.canAttack <$> character
+                              , Right (player == inTurn)
+                              ]
 
 preither :: MonadState s m => Getting (First a) s a -> b -> m (Either b a)
 preither getter err = do
