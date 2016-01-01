@@ -8,6 +8,7 @@
 
 module Firestone.Character where
 
+import {-# SOURCE #-} Firestone.Game
 import Firestone.Hero as H
 import Firestone.Minion as M
 
@@ -27,6 +28,8 @@ instance IsCharacter M.Minion where
     canAttack = M.canAttack
 instance IsCharacter H.Hero where
     canAttack = H.canAttack
+
+type CharacterLens a = Traversal' Game a
 
 damage :: IsCharacter c => Int -> State c ()
 damage d = health -= d

@@ -17,7 +17,8 @@ import Firestone.Minion
 import Firestone.Card
 import Firestone.Player
 import Firestone.Hero
-import Firestone.Game (Game, makeGame)
+import Firestone.Game
+import Firestone.Gameplay (makeGame)
 import Firestone.Deck
 import Firestone.IdGenerator
 import Firestone.Database

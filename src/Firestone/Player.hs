@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 
 module Firestone.Player ( Player(..)
+                        , PlayerLens(..)
                         , hero
                         , hand
                         , activeMinions
@@ -14,6 +15,7 @@ module Firestone.Player ( Player(..)
                         , drawCard
                         ) where
 
+import {-# SOURCE #-} Firestone.Game
 import Firestone.Hero
 import Firestone.Card
 import Firestone.Minion
@@ -29,6 +31,8 @@ data Player = Player { playerUuid :: String
                      , playerDeck :: Deck
                      , playerFatigue :: Int
                      } deriving (Show)
+
+type PlayerLens = Lens' Game Player
 
 makeFields ''Player
 

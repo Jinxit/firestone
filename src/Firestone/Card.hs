@@ -9,8 +9,11 @@ module Firestone.Card ( Type(..)
                       , Card(..)
                       , HasUuid(..)
                       , HasName(..)
+                      , CardLens(..)
                       , manaCost
                       , makeCard) where
+
+import {-# SOURCE #-} Firestone.Game
 
 import Control.Lens
 
@@ -29,6 +32,8 @@ data Card = Card { cardUuid :: String
                  , cardDescription :: String
                  , cardIsTargeting :: Bool
                  } deriving (Show)
+
+type CardLens = Traversal' Game Card
 
 makeFields ''Card
 

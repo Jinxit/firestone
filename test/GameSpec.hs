@@ -10,6 +10,7 @@ import Firestone.Hero hiding (canAttack)
 import Firestone.Minion hiding (canAttack)
 import Firestone.Deck
 import Firestone.Event
+import Firestone.Gameplay
 
 import Control.Monad.State
 import Control.Lens

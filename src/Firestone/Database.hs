@@ -1,4 +1,8 @@
-module Firestone.Database where
+module Firestone.Database ( lookupMinion
+                          , lookupMinions
+                          , lookupCard
+                          , lookupCards
+                          ) where
 
 import Firestone.Minion
 import Firestone.Card
@@ -25,22 +29,22 @@ lookupMinion :: IdGenerator -> String -> (Minion, IdGenerator)
 lookupMinion idGen name@"Oasis Snapjaw" = (minion, newGen)
   where
     (mId, mTime, newGen) = create idGen name
-    minion = makeMinion mId name 2 7 None [] True mTime
+    minion = makeMinion mId name 2 7 None [] True mTime []
 
 lookupMinion idGen name@"Murloc Raider" = (minion, newGen)
   where
     (mId, mTime, newGen) = create idGen name
-    minion = makeMinion mId name 2 1 Murloc [] True mTime
+    minion = makeMinion mId name 2 1 Murloc [] True mTime []
 
 lookupMinion idGen name@"Magma Rager" = (minion, newGen)
   where
     (mId, mTime, newGen) = create idGen name
-    minion = makeMinion mId name 5 1 None [] True mTime
+    minion = makeMinion mId name 5 1 None [] True mTime []
 
 lookupMinion idGen name@"Imp" = (minion, newGen)
   where
     (mId, mTime, newGen) = create idGen name
-    minion = makeMinion mId name 1 1 Demon [] True mTime
+    minion = makeMinion mId name 1 1 Demon [] True mTime []
 
 lookupCard :: IdGenerator -> String -> (Card, IdGenerator)
 
