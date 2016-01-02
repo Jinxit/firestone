@@ -121,7 +121,6 @@ data Game = Game { gameP1 :: Player
                  , gameTurn :: Int
                  , gameIdGen :: IdGenerator
                  , gameActive :: Bool
-                 , gameDebug :: [Int]
                  } deriving (Show)
 
 data Event = Attack   { eventAttacker :: Minion

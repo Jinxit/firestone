@@ -38,7 +38,7 @@ import Data.List
 import Data.Maybe
 
 makeGame :: Player -> Player -> Int -> IdGenerator -> Game
-makeGame p1 p2 turn idGen = execState start (Game p1 p2 turn idGen True [])
+makeGame p1 p2 turn idGen = execState start (Game p1 p2 turn idGen True)
 
 players :: State Game [Player]
 players = mapM use [p1, p2]

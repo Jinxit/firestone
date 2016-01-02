@@ -33,9 +33,6 @@ instance Triggerable Minion where
         let matchingTriggers = map (\(same, triggers) -> (same, filter ((== t) . triggerType) triggers)) allTriggers
         let actions = concat $ map (\(same, triggers) -> map (\trig -> (triggerAction trig) same) triggers) matchingTriggers
         forM_ actions $ \action -> action (cloneTraversal aC)
-        --let dumb = map (\(same, triggers) -> same) matchingTriggers
-        --deb <- use debug
-        --debug .= (sum $ map fromEnum dumb):deb
         return []
 
 instance Triggerable Hero where
