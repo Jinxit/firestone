@@ -20,3 +20,6 @@ prerror getter err = do
     case maybeValue of
         Just x  -> return x
         Nothing -> error err
+
+unuse :: MonadState s m => Getting (First a) s a -> m a
+unuse getter = prerror getter "Undefined error"

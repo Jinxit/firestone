@@ -90,26 +90,30 @@ canAttack player character game = canCharacterAttack (game^?!character)
                                && (game^?!player) == (game^?!playerInTurn)
 
 isAttackValid :: (IsCharacter a, IsCharacter b)
-              => CharacterLens a -> CharacterLens b -> State Game Bool
-isAttackValid a t = do
-    attacker <- prerror a "Invalid attacker"
-    attackerOwner <- use (ownerOf attacker)
-    target <- prerror t "Invalid target"
-    targetOwner <- use (ownerOf target)
-    return $ canCharacterAttack attacker
-          && attackerOwner /= targetOwner
+              => CharacterLens a -> CharacterLens b -> Game -> Bool
+isAttackValid a t game = canCharacterAttack attacker
+                       && (game^?!(ownerOf attacker)) /= (game^?!(ownerOf target))
+  where
+    attacker = game^?!a
+    target   = game^?!t
+
+isAttackValidM :: (IsCharacter a, IsCharacter b)
+               => CharacterLens a -> CharacterLens b -> State Game Bool
+isAttackValidM a t = do
+    game <- get
+    return $ isAttackValid a t game
 
 attack :: (IsCharacter a, IsCharacter b, Triggerable a, Triggerable b)
        => CharacterLens a -> CharacterLens b -> State Game [Event]
 attack attacker target = do
-    valid <- isAttackValid attacker target
+    valid <- isAttackValidM attacker target
     case valid of
         False -> error "Attack is not valid"
         True  -> do
-            g1 <- get
-            damage target (g1^?!attacker.attackValue)
-            g2 <- get
-            damage attacker (g2^?!target.attackValue)
+            attackerAttack <- unuse (attacker.attackValue)
+            damage target attackerAttack
+            targetAttack <- unuse (target.attackValue)
+            damage attacker targetAttack
             attacker.isSleepy .= True
             endAction
             return $ []

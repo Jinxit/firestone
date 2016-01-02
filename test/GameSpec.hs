@@ -83,7 +83,7 @@ spec = do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider"]
             g^.p1.hero.health `shouldBe` 20
-            evalState (isAttackValid (p1.m 0) (p2.hero)) g `shouldBe` True
+            isAttackValid (p1.m 0) (p2.hero) g `shouldBe` True
             let g2 = play g $ attack (p1.m 0) (p2.hero)
             g2^.p2.hero.health `shouldBe` 18
 
@@ -139,7 +139,7 @@ spec = do
         it "can not attack friendly minions" $ do
             let g = buildGame $ do
                     setActiveMinions 1 ["Murloc Raider", "Magma Rager"]
-            evalState (isAttackValid (p1.m 0) (p1.m 1)) g `shouldBe` False
+            isAttackValid (p1.m 0) (p1.m 1) g `shouldBe` False
 
         it "should remove dead minions" $ do
             let g = buildGame $ do
