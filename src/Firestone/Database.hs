@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes             #-}
 
 module Firestone.Database ( lookupMinion
+                          , lookupMinionM
                           , lookupMinions
                           , lookupCard
                           , lookupCards
@@ -25,6 +26,13 @@ lookupMinions = lookupMultiple lookupMinion
 
 lookupCards :: IdGenerator -> [String] -> ([Card], IdGenerator)
 lookupCards = lookupMultiple lookupCard
+
+lookupMinionM :: String -> State Game Minion
+lookupMinionM name = do
+    gen1 <- use idGen
+    let (minion, gen2) = lookupMinion gen1 name
+    idGen .= gen2
+    return minion
 
 lookupMinion :: IdGenerator -> String -> (Minion, IdGenerator)
 
@@ -51,9 +59,7 @@ lookupMinion gen name@"Imp Gang Boss" = (minion, newGen)
     summonImp :: Bool -> MinionLens -> State Game ()
     summonImp isMe m = case isMe of
         True  -> do
-            gen1 <- use idGen
-            let (imp, gen2) = lookupMinion gen1 "Imp"
-            idGen .= gen2
+            imp <- lookupMinionM "Imp"
             me <- prerror m "Invalid minion sent to summonImp"
             position <- positionOf me
             zoom (ownerOf me) $ summonMinionAt (position + 1) imp
