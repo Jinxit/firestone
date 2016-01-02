@@ -85,13 +85,9 @@ endTurn = do
     return []
 
 canAttack :: IsCharacter a
-          => PlayerLens -> CharacterLens a -> State Game Bool
-canAttack p c = do
-    player <- use p
-    inTurn <- use playerInTurn
-    character <- prerror c "Invalid attacker"
-    return $ canCharacterAttack character
-          && player == inTurn
+          => PlayerLens -> CharacterLens a -> Game -> Bool
+canAttack player character game = canCharacterAttack (game^?!character)
+                               && (game^?!player) == (game^?!playerInTurn)
 
 isAttackValid :: (IsCharacter a, IsCharacter b)
               => CharacterLens a -> CharacterLens b -> State Game Bool
