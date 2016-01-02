@@ -1,18 +1,22 @@
+{-# LANGUAGE RankNTypes             #-}
+
 module Firestone.Database ( lookupMinion
                           , lookupMinions
                           , lookupCard
                           , lookupCards
                           ) where
 
-import Firestone.Minion
-import Firestone.Card
+import Firestone.Types
+import Firestone.Game
+import Firestone.Player
 import Firestone.IdGenerator
 
 import Control.Lens
+import Control.Monad.State
 
 lookupMultiple :: (IdGenerator -> String -> (a, IdGenerator))
                -> IdGenerator -> [String] -> ([a], IdGenerator)
-lookupMultiple lookup idGen = foldr go ([], idGen)
+lookupMultiple lookup gen = foldr go ([], gen)
   where
     go name (rest, gen) = (lookup gen name) & _1 %~ (flip (:) rest)
 
@@ -22,48 +26,78 @@ lookupMinions = lookupMultiple lookupMinion
 lookupCards :: IdGenerator -> [String] -> ([Card], IdGenerator)
 lookupCards = lookupMultiple lookupCard
 
--- todo: Imp Gang Boss
-
 lookupMinion :: IdGenerator -> String -> (Minion, IdGenerator)
 
-lookupMinion idGen name@"Oasis Snapjaw" = (minion, newGen)
+lookupMinion gen name@"Oasis Snapjaw" = (minion, newGen)
   where
-    (mId, mTime, newGen) = create idGen name
+    (mId, mTime, newGen) = create gen name
     minion = makeMinion mId name 2 7 None [] True mTime []
 
-lookupMinion idGen name@"Murloc Raider" = (minion, newGen)
+lookupMinion gen name@"Murloc Raider" = (minion, newGen)
   where
-    (mId, mTime, newGen) = create idGen name
+    (mId, mTime, newGen) = create gen name
     minion = makeMinion mId name 2 1 Murloc [] True mTime []
 
-lookupMinion idGen name@"Magma Rager" = (minion, newGen)
+lookupMinion gen name@"Magma Rager" = (minion, newGen)
   where
-    (mId, mTime, newGen) = create idGen name
+    (mId, mTime, newGen) = create gen name
     minion = makeMinion mId name 5 1 None [] True mTime []
 
-lookupMinion idGen name@"Imp" = (minion, newGen)
+lookupMinion gen name@"Imp Gang Boss" = (minion, newGen)
   where
-    (mId, mTime, newGen) = create idGen name
+    (mId, mTime, newGen) = create gen name
+    minion = makeMinion mId name 2 4 Demon [] True mTime [Trigger MinionDamaged summonImp]
+
+    summonImp :: Bool -> MinionLens -> State Game ()
+    summonImp isMe m = case isMe of
+        True  -> do
+            gen1 <- use idGen
+            let (imp, gen2) = lookupMinion gen1 "Imp"
+            idGen .= gen2
+            me <- prerror m "Invalid minion sent to summonImp"
+            position <- positionOf me
+            zoom (ownerOf me) $ summonMinionAt (position + 1) imp
+        False -> do
+            return ()
+
+lookupMinion gen name@"Imp" = (minion, newGen)
+  where
+    (mId, mTime, newGen) = create gen name
     minion = makeMinion mId name 1 1 Demon [] True mTime []
+
+lookupMinion gen name@"Murloc Tinyfin" = (minion, newGen)
+  where
+    (mId, mTime, newGen) = create gen name
+    minion = makeMinion mId name 1 1 Murloc [] True mTime []
 
 lookupCard :: IdGenerator -> String -> (Card, IdGenerator)
 
-lookupCard idGen name@"Oasis Snapjaw" = (card, newGen)
+lookupCard gen name@"Oasis Snapjaw" = (card, newGen)
   where
-    (cId, _, newGen) = create idGen name
+    (cId, _, newGen) = create gen name
     card = makeCard cId name 4 (Just 2) (Just 7) MinionCard "" False
 
-lookupCard idGen name@"Murloc Raider" = (card, newGen)
+lookupCard gen name@"Murloc Raider" = (card, newGen)
   where
-    (cId, _, newGen) = create idGen name
+    (cId, _, newGen) = create gen name
     card = makeCard cId name 1 (Just 2) (Just 1) MinionCard "" False
 
-lookupCard idGen name@"Magma Rager" = (card, newGen)
+lookupCard gen name@"Magma Rager" = (card, newGen)
   where
-    (cId, _, newGen) = create idGen name
+    (cId, _, newGen) = create gen name
     card = makeCard cId name 3 (Just 5) (Just 1) MinionCard "" False
 
-lookupCard idGen name@"Imp" = (card, newGen)
+lookupCard gen name@"Imp Gang Boss" = (card, newGen)
   where
-    (cId, _, newGen) = create idGen name
+    (cId, _, newGen) = create gen name
+    card = makeCard cId name 3 (Just 2) (Just 4) MinionCard "" False
+
+lookupCard gen name@"Imp" = (card, newGen)
+  where
+    (cId, _, newGen) = create gen name
     card = makeCard cId name 1 (Just 1) (Just 1) MinionCard "" False
+
+lookupCard gen name@"Murloc Tinyfin" = (card, newGen)
+  where
+    (cId, _, newGen) = create gen name
+    card = makeCard cId name 0 (Just 1) (Just 1) MinionCard "" False

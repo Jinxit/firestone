@@ -13,15 +13,10 @@ module Firestone.GameBuilder ( buildGame
                              , setDeck
                              ) where
 
-import Firestone.Minion
-import Firestone.Card
-import Firestone.Player
-import Firestone.Hero
-import Firestone.Game
-import Firestone.Gameplay (makeGame)
-import Firestone.Deck
+import Firestone.Types
 import Firestone.IdGenerator
 import Firestone.Database
+import Firestone.Game
 
 import Control.Monad.State
 import Control.Lens

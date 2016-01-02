@@ -16,20 +16,16 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
-                     , Firestone.Card
-                     , Firestone.Deck
-                     , Firestone.GameBuilder
-                     , Firestone.Hero
-                     , Firestone.Minion
-                     , Firestone.Player
-                     , Firestone.Database
-                     , Firestone.IdGenerator
-                     , Firestone.Game
-                     , Firestone.Event
-                     , Firestone.Error
                      , Firestone.Character
+                     , Firestone.Database
+                     , Firestone.GameBuilder
+                     , Firestone.Game
+                     , Firestone.Hero
+                     , Firestone.IdGenerator
+                     , Firestone.Player
                      , Firestone.Trigger
-                     , Firestone.Gameplay
+                     , Firestone.Types
+                     , Firestone.Utils
   build-depends:       base >= 4.7 && < 5
                      , mtl
                      , lens

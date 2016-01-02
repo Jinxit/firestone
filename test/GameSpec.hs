@@ -3,14 +3,8 @@
 module GameSpec where
 
 import Firestone.Game
-import Firestone.Player
+import Firestone.Types
 import Firestone.GameBuilder
-import Firestone.Card
-import Firestone.Hero hiding (canAttack)
-import Firestone.Minion hiding (canAttack)
-import Firestone.Deck
-import Firestone.Event
-import Firestone.Gameplay
 
 import Control.Monad.State
 import Control.Lens

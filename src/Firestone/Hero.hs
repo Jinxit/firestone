@@ -5,47 +5,15 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.Hero ( Hero(..)
-                      , HasUuid(..)
-                      , HasName(..)
-                      , HasHealth(..)
-                      , HasMaxHealth(..)
-                      , HasAttackValue(..)
-                      , HasIsSleepy(..)
-                      , mana
-                      , maxMana
-                      , makeHero
-                      , increaseMana
-                      , canAttack
+module Firestone.Hero ( increaseMana
                       ) where
 
-import Firestone.Card
+import Firestone.Types
 
 import Control.Monad.State
 import Control.Lens
-
-data Hero = Hero { heroUuid :: String
-                 , heroName :: String
-                 , heroHealth :: Int
-                 , heroMaxHealth :: Int
-                 , heroMana :: Int
-                 , heroMaxMana :: Int
-                 , heroAttackValue :: Int
-                 , heroIsSleepy :: Bool
-                 } deriving (Show)
-
-makeFields ''Hero
-
-instance Eq Hero where
-    (==) a b = a^.uuid == b^.uuid
-
-makeHero :: String -> String -> Int -> Int -> Hero
-makeHero hId hName hHp hMana = Hero hId hName hHp hHp hMana hMana 0 False
 
 increaseMana :: State Hero ()
 increaseMana = do
     maxMana %= min 10 . (+ 1)
     mana <~ use maxMana
-
-canAttack :: Hero -> Bool
-canAttack h = h^.attackValue > 0

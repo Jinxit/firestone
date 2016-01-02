@@ -5,42 +5,14 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE TypeSynonymInstances   #-}
 
-module Firestone.Player ( Player(..)
-                        , PlayerLens(..)
-                        , hero
-                        , hand
-                        , activeMinions
-                        , deck
-                        , makePlayer
-                        , drawCard
+module Firestone.Player ( drawCard
+                        , summonMinionAt
                         ) where
 
-import {-# SOURCE #-} Firestone.Game
-import Firestone.Hero
-import Firestone.Card
-import Firestone.Minion
-import Firestone.Deck
+import Firestone.Types
 
 import Control.Monad.State
 import Control.Lens
-
-data Player = Player { playerUuid :: String
-                     , playerHero :: Hero
-                     , playerHand :: [Card]
-                     , playerActiveMinions :: [Minion]
-                     , playerDeck :: Deck
-                     , playerFatigue :: Int
-                     } deriving (Show)
-
-type PlayerLens = Lens' Game Player
-
-makeFields ''Player
-
-instance Eq Player where
-    (==) a b = a^.uuid == b^.uuid
-
-makePlayer :: String -> Hero -> Player
-makePlayer pId pHero = Player pId pHero [] [] (Deck []) 1
 
 drawCard :: State Player ()
 drawCard = do
@@ -53,3 +25,11 @@ drawCard = do
             let (x:xs) = player^.deck.cards
             hand %= take 10 . (|> x)
             deck.cards .= xs
+
+summonMinionAt :: Int -> Minion -> State Player ()
+summonMinionAt pos m = activeMinions %= insertAt pos m
+
+insertAt :: Int -> a -> [a] -> [a]
+insertAt i x xs = ls ++ (x:rs)
+  where
+    (ls, rs) = splitAt i xs

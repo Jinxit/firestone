@@ -1,0 +1,34 @@
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE FunctionalDependencies #-}
+
+module Firestone.Game ( Game(..)
+                      , HasP1(..)
+                      , HasP2(..)
+                      , HasTurn(..)
+                      , HasIdGen(..)
+                      , HasActive(..)
+                      , ownerOf
+                      , positionOf
+                      , players
+                      ) where
+
+import Firestone.Player
+
+import Control.Monad.State
+import Control.Lens
+
+data Game
+class HasP1 s a | s -> a where
+    p1 :: Lens' s a
+class HasP2 s a | s -> a where
+    p2 :: Lens' s a
+class HasTurn s a | s -> a where
+    turn :: Lens' s a
+class HasIdGen s a | s -> a where
+    idGen :: Lens' s a
+class HasActive s a | s -> a where
+    active :: Lens' s a
+
+ownerOf :: HasUuid a String => a -> PlayerLens
+positionOf :: a -> State Game Int
+players :: State Game [a]
