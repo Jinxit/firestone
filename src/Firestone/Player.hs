@@ -10,6 +10,7 @@ module Firestone.Player ( drawCard
                         ) where
 
 import Firestone.Types
+import Firestone.Utils
 
 import Control.Monad.State
 import Control.Lens
@@ -28,8 +29,3 @@ drawCard = do
 
 summonMinionAt :: Int -> Minion -> State Player ()
 summonMinionAt pos m = activeMinions %= insertAt pos m
-
-insertAt :: Int -> a -> [a] -> [a]
-insertAt i x xs = ls ++ (x:rs)
-  where
-    (ls, rs) = splitAt i xs

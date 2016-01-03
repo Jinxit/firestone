@@ -23,3 +23,8 @@ prerror getter err = do
 
 unuse :: MonadState s m => Getting (First a) s a -> m a
 unuse getter = prerror getter "Undefined error"
+
+insertAt :: Int -> a -> [a] -> [a]
+insertAt i x xs = ls ++ (x:rs)
+  where
+    (ls, rs) = splitAt i xs
