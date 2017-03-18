@@ -56,15 +56,10 @@ lookupMinion gen name@"Imp Gang Boss" = (minion, newGen)
     (mId, mTime, newGen) = create gen name
     minion = makeMinion mId name 2 4 Demon [] True mTime [Trigger MinionDamaged summonImp]
 
-    summonImp :: Bool -> MinionLens -> State Game ()
-    summonImp isMe m = case isMe of
-        True  -> do
-            imp <- lookupMinionM "Imp"
-            me <- prerror m "Invalid minion sent to summonImp"
-            position <- positionOf me
-            zoom (ownerOf me) $ summonMinionAt (position + 1) imp
-        False -> do
-            return ()
+    summonImp :: Bool -> PlayerLens -> MinionLens -> Script ()
+    summonImp isMe p m = case isMe of
+        True  -> spawnMinion p "Imp" (Adjacent m After)
+        False -> return ()
 
 lookupMinion gen name@"Imp" = (minion, newGen)
   where
