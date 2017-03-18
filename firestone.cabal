@@ -16,12 +16,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , Firestone.Character
                      , Firestone.Database
                      , Firestone.GameBuilder
                      , Firestone.Game
                      , Firestone.Hero
                      , Firestone.IdGenerator
                      , Firestone.Player
+                     , Firestone.Trigger
                      , Firestone.Types
                      , Firestone.Utils
                      , Firestone.Script

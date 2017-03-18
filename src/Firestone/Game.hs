@@ -25,6 +25,8 @@ module Firestone.Game ( makeGame
 import Firestone.Types
 import Firestone.Player
 import Firestone.Hero
+import Firestone.Character
+import Firestone.Trigger
 import Firestone.IdGenerator
 import Firestone.Utils
 import {-# SOURCE #-} Firestone.Database
@@ -34,6 +36,27 @@ import Control.Lens
 import Control.Monad.State
 import Data.List
 import Data.Maybe
+
+ownerOf :: HasUuid a String => a -> PlayerLens
+ownerOf u f g =
+    case ownsAny p1 of
+        True  -> p1 f g
+        False -> case ownsAny p2 of
+                    True  -> p2 f g
+                    False -> error ("Ownerless thing found: " ++ (u^.uuid))
+  where
+    ownsMinion p = any (\m -> m^.uuid == u^.uuid) (p^.activeMinions)
+    ownsHero p = (u^.uuid) == (p^.hero^.uuid)
+    ownsCard p = any (\c -> c^.uuid == u^.uuid) (p^.hand)
+    ownsAny p = ownsMinion (g^.p)
+             || ownsHero (g^.p)
+             || ownsCard (g^.p)
+
+positionOf :: Minion -> State Game Int
+positionOf minion = do
+    owner <- use (ownerOf minion)
+    let pos = (minion `elemIndex` (owner^.activeMinions))
+    return $ fromMaybe (-1) pos
 
 makeGame :: Player -> Player -> Int -> IdGenerator -> Game
 makeGame p1 p2 turn idGen = execState start (Game p1 p2 turn idGen True)
