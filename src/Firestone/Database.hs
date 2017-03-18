@@ -8,9 +8,9 @@ module Firestone.Database ( lookupMinion
                           ) where
 
 import Firestone.Types
-import Firestone.Game
 import Firestone.Player
 import Firestone.IdGenerator
+import Firestone.Script
 
 import Control.Lens
 import Control.Monad.State

@@ -25,6 +25,8 @@ library
                      , Firestone.Types
                      , Firestone.Utils
                      , Firestone.Script
+                     , Firestone.Common
+                     , Firestone.Character
   build-depends:       base >= 4.7 && < 5
                      , mtl
                      , lens

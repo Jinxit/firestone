@@ -45,5 +45,5 @@ spec = do
             (g3^?!p2.m 3.timestamp) > (g3^?!p2.m 4.timestamp) `shouldBe` True
             (g3^?!p2.m 4.timestamp) > (g3^?!p2.m 0.timestamp) `shouldBe` True
 
-m :: Int -> Traversal' Player Minion
-m i = activeMinions.ix i
+m :: Int -> Lens' Player Minion
+m i = unsafeSingular $ activeMinions.ix i

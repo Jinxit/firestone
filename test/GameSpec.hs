@@ -186,10 +186,10 @@ spec = do
             length (g2^.p1.hand) `shouldBe` 0
             length (g2^.p1.activeMinions) `shouldBe` 3
 
-m :: Int -> Traversal' Player Minion
-m i = activeMinions.ix i
+m :: Int -> Lens' Player Minion
+m i = unsafeSingular $ activeMinions.ix i
 
 playFirstMinionCard :: State Game [Event]
 playFirstMinionCard = do
     p <- use playerInTurn
-    playMinionCard (playerInTurn.hand.ix 0) (length (p^.activeMinions))
+    playMinionCard (unsafeSingular $ playerInTurn.hand.ix 0) (length (p^.activeMinions))

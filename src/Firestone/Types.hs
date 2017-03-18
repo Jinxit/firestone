@@ -6,7 +6,6 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE LiberalTypeSynonyms    #-}
-{-# LANGUAGE ImpredicativeTypes     #-}
 {-# LANGUAGE DeriveFunctor          #-}
 
 
@@ -16,6 +15,7 @@ import Firestone.IdGenerator
 import Firestone.Utils
 
 import Control.Lens
+import Control.Lens.Reified
 import Control.Monad.State
 import Control.Monad.Free
 import Data.List
@@ -40,7 +40,7 @@ data Card = Card { cardUuid :: String
                  , cardIsTargeting :: Bool
                  } deriving (Show)
 
-type CardLens = Traversal' Game Card
+type CardLens = Lens' Game Card
 
 makeCard :: String -> String -> Int -> Maybe Int -> Maybe Int -> CardType
          -> String -> Bool -> Card
@@ -90,7 +90,9 @@ data Minion = Minion { minionUuid :: String
                      , minionTriggers :: [Trigger]
                      } deriving (Show)
 
-type MinionLens = Traversal' Game Minion
+type MinionLens = Lens' Game Minion
+type ReifiedMinionLens = ReifiedLens' Game Minion
+type ReifiedMinionTraversal = ReifiedTraversal' Game Minion
 
 makeMinion :: String -> String -> Int -> Int -> MinionRace
            -> [MinionState] -> Bool -> Int -> [Trigger] -> Minion
@@ -123,7 +125,7 @@ data Position = Index Int
 
 data Action next = DamageMinion MinionLens Int next
                  | SpawnMinion PlayerLens String Position next
-                 | GetMinions PlayerLens (MinionLens -> next)
+                 | GetMinions PlayerLens (ReifiedMinionTraversal -> next)
 
 instance Functor Action where
     fmap f (DamageMinion minion amount next) = DamageMinion minion amount (f next)
@@ -189,87 +191,12 @@ class ( HasUuid c String
       ) => IsCharacter c where
     canCharacterAttack :: c -> Bool
 
-type CharacterLens a = Traversal' Game a
+type CharacterLens a = Lens' Game a
 
 instance IsCharacter Minion where
     canCharacterAttack m = not (m^.isSleepy) && m^.attackValue > 0
 instance IsCharacter Hero where
     canCharacterAttack h = h^.attackValue > 0
 
--- came from Game.hs
-ownerOf :: HasUuid a String => a -> PlayerLens
-ownerOf u f g =
-    case ownsAny p1 of
-        True  -> p1 f g
-        False -> case ownsAny p2 of
-                    True  -> p2 f g
-                    False -> error ("Ownerless thing found: " ++ (u^.uuid))
-  where
-    ownsMinion p = any (\m -> m^.uuid == u^.uuid) (p^.activeMinions)
-    ownsHero p = (u^.uuid) == (p^.hero^.uuid)
-    ownsCard p = any (\c -> c^.uuid == u^.uuid) (p^.hand)
-    ownsAny p = ownsMinion (g^.p)
-             || ownsHero (g^.p)
-             || ownsCard (g^.p)
-
-positionOf :: Minion -> State Game Int
-positionOf minion = do
-    owner <- use (ownerOf minion)
-    let pos = (minion `elemIndex` (owner^.activeMinions))
-    return $ fromMaybe (-1) pos
-
--- came from Script.hs
-interpret :: Script () -> State Game [Event]
-interpret script = case script of 
-    Free (DamageMinion minion amount next) -> do
-        damage minion amount
-        interpret next
-    Free (SpawnMinion player name pos next) -> do
-        index <- case pos of
-                        (Index i) -> return i
-                        Last -> return $ views activeMinions length
-                        (Adjacent minion side) -> do
-                            i2 <- positionOf minion
-                            return (case side of
-                                        Left -> i2
-                                        Right -> i2 + 1)
-
-        gen1 <- use idGen
-        let (minion, gen2) = lookupMinion gen1 name
-        idGen .= gen2
-        zoom player $ summonMinionAt index minion
-        interpret next 
-    Free (GetMinions player next) -> do
-        let minions = player^.activeMinions
-        interpret (next minions)
-    Pure _ -> return []
-
--- came from Trigger.hs
 class Triggerable c where
-    trigger :: TriggerType -> ATraversal' Game c -> State Game [Event]
-
-instance Triggerable Minion where
-    trigger t aC = do
-        let c = cloneTraversal aC
-        mId <- prerror (c.uuid) "Invalid character sent to trigger"
-        let isSame minion = minion^.uuid == mId
-        p1Minions <- use (p1.activeMinions)
-        p2Minions <- use (p2.activeMinions)
-        let allMinions = sort (p1Minions ++ p2Minions)
-        let allTriggers = map (\minion -> (isSame minion, minion^.triggers)) allMinions
-        let matchingTriggers = map (\(same, triggers) -> (same, filter ((== t) . triggerType) triggers)) allTriggers
-        let actions = concat $ map (\(same, triggers) -> map (\trig -> (triggerAction trig) same) triggers) matchingTriggers
-        forM_ actions $ \action -> interpret $ action (views aC ownerOf) (cloneTraversal aC)
-        return []
-
-instance Triggerable Hero where
-    trigger t aC = return []
-
--- came from Character.hs
-damage :: (IsCharacter c, Triggerable c) => CharacterLens c -> Int -> State Game [Event]
-damage c d = do
-    c.health -= d
-    case d > 0 of
-        True  -> trigger MinionDamaged c
-        False -> return []
-    return []
+    trigger :: HasUuid c String => TriggerType -> c -> State Game [Event]

@@ -6,7 +6,6 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE LiberalTypeSynonyms    #-}
-{-# LANGUAGE ImpredicativeTypes     #-}
 
 module Firestone.Utils where
 

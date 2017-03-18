@@ -6,32 +6,23 @@
 {-# LANGUAGE TypeSynonymInstances   #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE LiberalTypeSynonyms    #-}
-{-# LANGUAGE ImpredicativeTypes     #-}
 
-module Firestone.Game ( makeGame
-                      , players
-                      , ownerOf
-                      , positionOf
-                      , play
-                      , playerInTurn
-                      , endTurn
-                      , canAttack
-                      , isAttackValid
-                      , attack
-                      , playMinionCard
-                      , prerror
-                      ) where
+module Firestone.Game where
 
 import Firestone.Types
 import Firestone.Player
 import Firestone.Hero
 import Firestone.IdGenerator
 import Firestone.Utils
+import Firestone.Common
+import Firestone.Character
 import {-# SOURCE #-} Firestone.Database
 
 import Control.Exception.Base
 import Control.Lens
+import Control.Lens.Reified
 import Control.Monad.State
+import Control.Monad.Free
 import Data.List
 import Data.Maybe
 
@@ -138,5 +129,46 @@ endAction :: State Game [Event]
 endAction = do
     removeDeadMinions
     checkGameOver
-
     return []
+
+interpret :: Script () -> State Game [Event]
+interpret script = case script of 
+    Free (DamageMinion minion amount next) -> do
+        damage minion amount
+        interpret next
+    Free (SpawnMinion player name pos next) -> do
+        index <- case pos of
+                        (Index i) -> return i
+                        Last -> uses (player.activeMinions) length
+                        (Adjacent minion2 side) -> do
+                            -- todo
+                            minion3 <- use minion2
+                            i2 <- positionOf minion3
+                            return (case side of
+                                        Before -> i2
+                                        After -> i2 + 1)
+
+        gen1 <- use idGen
+        let (minion, gen2) = lookupMinion gen1 name
+        idGen .= gen2
+        zoom player $ summonMinionAt index minion
+        interpret next 
+    Free (GetMinions player next) -> interpret (next (Traversal (player.activeMinions.traversed)))
+    Pure _ -> return []
+
+instance Triggerable Minion where
+    trigger t c = do
+        let mId = c^.uuid
+        let isSame minion = minion^.uuid == mId
+        p1Minions <- uses (p1.activeMinions) (zip [0..])
+        p2Minions <- uses (p2.activeMinions) (zip [0..])
+        let allMinions = sortBy (\a b -> compare (a^._2) (b^._2)) (p1Minions ++ p2Minions)
+        let allTriggers = map (\(i, minion) -> (i, minion, minion^.triggers)) allMinions
+        let matchingTriggers = map (\(i, minion, triggers) -> (i, minion, filter ((== t) . triggerType) triggers)) allTriggers
+        let actions = concat $ map (\(i, minion, triggers) -> map (\trig -> (triggerAction trig) (isSame minion) (ownerOf minion) (singular ((ownerOf minion).activeMinions.ix i))) triggers) matchingTriggers
+        forM_ actions interpret
+        return []
+
+
+instance Triggerable Hero where
+    trigger t c = return []
